@@ -1,2 +1,15 @@
 # PKollector
-Pokemon TCG Collection and analytics platform
+
+## Overview
+
+## Features
+
+## Tech Stack
+
+## Architecture
+
+## Project Status
+
+## Future Improvements
+
+## Disclaimer
