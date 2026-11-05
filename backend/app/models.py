@@ -56,11 +56,11 @@ class Card(Base):
     image_large: Mapped[str | None] = mapped_column(String)
     tcgplayer_url: Mapped[str | None] = mapped_column(String)
     tcgplayer_updated_at: Mapped[date | None] = mapped_column(Date)
-    tcgplayer_prices: Mapped[dict | None] = mapped_column(JSONB)
+    tcgplayer_prices: Mapped[dict | None] = mapped_column(JSONB(none_as_null=True))
     cardmarket_url: Mapped[str | None] = mapped_column(String)
     cardmarket_updated_at: Mapped[date | None] = mapped_column(Date)
-    cardmarket_prices: Mapped[dict | None] = mapped_column(JSONB)
-
+    cardmarket_prices: Mapped[dict | None] = mapped_column(JSONB(none_as_null=True))
+    
     card_set: Mapped[CardSet] = relationship()
     abilities: Mapped[list['CardAbility']] = relationship(
         cascade='all, delete-orphan', order_by='CardAbility.position')
