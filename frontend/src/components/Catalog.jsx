@@ -91,7 +91,7 @@ export default function Catalog({ owned = {}, onChangeQty, onlyOwned = false }) 
 
       <div className='grid'>
         {data.items.map((c) => (
-          <div key={c.id} className='tile'>
+        <div key={c.id} className={'tile' + (owned[c.id] ? ' owned' : '')}>
             <img src={c.image_small} alt={c.name} loading='lazy' onClick={() => setSelected(c)} />
             <div className='tile-info'>
               <span title={c.name}>{c.name}</span>

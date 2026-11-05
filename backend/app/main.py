@@ -145,3 +145,67 @@ def get_card(card_id: str, db: Session = Depends(get_db)):
     if not c:
         raise HTTPException(404, 'Carta no encontrada')
     return card_out(c)
+
+
+class QtyBody(BaseModel):
+    quantity: int
+
+
+def need_user(x_user_id: str | None = Header(None)):
+    if not x_user_id:
+        raise HTTPException(400, 'Falta el header X-User-Id')
+    return x_user_id
+
+
+@app.get('/collection')
+def my_collection(user_id: str = Depends(need_user), db: Session = Depends(get_db)):
+    rows = db.execute(
+        select(CollectionItem.card_id, CollectionItem.quantity)
+        .where(CollectionItem.user_id == user_id)
+    ).all()
+    return {r.card_id: r.quantity for r in rows}
+
+
+@app.put('/collection/{card_id}')
+def set_quantity(card_id: str, body: QtyBody,
+                 user_id: str = Depends(need_user), db: Session = Depends(get_db)):
+    if not db.get(Card, card_id):
+        raise HTTPException(404, 'Carta no encontrada')
+    item = db.scalar(
+        select(CollectionItem).where(
+            CollectionItem.user_id == user_id, CollectionItem.card_id == card_id)
+    )
+    if body.quantity <= 0:
+        if item:
+            db.delete(item)
+    elif item:
+        item.quantity = body.quantity
+    else:
+        db.add(CollectionItem(user_id=user_id, card_id=card_id, quantity=body.quantity))
+    db.commit()
+    return {'card_id': card_id, 'quantity': max(body.quantity, 0)}
+
+
+@app.get('/progress')
+def progress(user_id: str = Depends(need_user), db: Session = Depends(get_db)):
+    stmt = (
+        select(
+            CardSet.id, CardSet.name, CardSet.series,
+            func.count(Card.id).label('total'),
+            func.count(CollectionItem.id).label('owned'),
+        )
+        .join(Card, Card.set_id == CardSet.id)
+        .outerjoin(CollectionItem, and_(
+            CollectionItem.card_id == Card.id, CollectionItem.user_id == user_id))
+        .group_by(CardSet.id, CardSet.name, CardSet.series, CardSet.release_date)
+        .order_by(CardSet.release_date.desc().nulls_last())
+    )
+    sets = [
+        {'id': r.id, 'name': r.name, 'series': r.series, 'total': r.total, 'owned': r.owned}
+        for r in db.execute(stmt).all()
+    ]
+    return {
+        'total': sum(s['total'] for s in sets),
+        'owned': sum(s['owned'] for s in sets),
+        'sets': sets,
+    }
