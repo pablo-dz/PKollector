@@ -1,0 +1,147 @@
+import os
+
+from dotenv import load_dotenv
+from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from sqlalchemy import and_, func, select
+from sqlalchemy.orm import Session, joinedload, selectinload
+
+from .db import SessionLocal
+from .models import Card, CardSet, CollectionItem
+
+load_dotenv()
+app = FastAPI(title='PKollector API')
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=os.getenv('CORS_ORIGINS', 'http://localhost:5173').split(','),
+    allow_methods=['*'],
+    allow_headers=['*'],
+)
+
+# Los 11 tipos que devuelve GET /v2/types de la API
+TYPES = ['Colorless', 'Darkness', 'Dragon', 'Fairy', 'Fighting', 'Fire',
+         'Grass', 'Lightning', 'Metal', 'Psychic', 'Water']
+
+
+def get_db():
+    with SessionLocal() as db:
+        yield db
+
+
+def iso(d):
+    return d.isoformat() if d else None
+
+
+def card_out(c: Card):
+    return {
+        'id': c.id, 'name': c.name, 'supertype': c.supertype, 'subtypes': c.subtypes,
+        'level': c.level, 'hp': c.hp, 'types': c.types,
+        'evolves_from': c.evolves_from, 'evolves_to': c.evolves_to, 'rules': c.rules,
+        'ancient_trait': (
+            {'name': c.ancient_trait_name, 'text': c.ancient_trait_text}
+            if c.ancient_trait_name else None
+        ),
+        'abilities': [{'name': a.name, 'text': a.text, 'type': a.type} for a in c.abilities],
+        'attacks': [
+            {'name': a.name, 'cost': a.cost, 'converted_energy_cost': a.converted_energy_cost,
+             'damage': a.damage, 'text': a.text}
+            for a in c.attacks
+        ],
+        'weaknesses': [{'type': w.type, 'value': w.value} for w in c.weaknesses],
+        'resistances': [{'type': r.type, 'value': r.value} for r in c.resistances],
+        'retreat_cost': c.retreat_cost, 'converted_retreat_cost': c.converted_retreat_cost,
+        'set_id': c.set_id, 'set_name': c.card_set.name,
+        'number': c.number, 'artist': c.artist, 'rarity': c.rarity,
+        'flavor_text': c.flavor_text,
+        'national_pokedex_numbers': c.national_pokedex_numbers,
+        'legalities': {'standard': c.legal_standard, 'expanded': c.legal_expanded,
+                       'unlimited': c.legal_unlimited},
+        'regulation_mark': c.regulation_mark,
+        'image_small': c.image_small, 'image_large': c.image_large,
+        'tcgplayer': {'url': c.tcgplayer_url, 'updated_at': iso(c.tcgplayer_updated_at),
+                      'prices': c.tcgplayer_prices},
+        'cardmarket': {'url': c.cardmarket_url, 'updated_at': iso(c.cardmarket_updated_at),
+                       'prices': c.cardmarket_prices},
+    }
+
+
+LOAD_ALL = (
+    joinedload(Card.card_set),
+    selectinload(Card.abilities),
+    selectinload(Card.attacks),
+    selectinload(Card.weaknesses),
+    selectinload(Card.resistances),
+)
+
+
+@app.get('/health')
+def health():
+    return {'ok': True}
+
+
+@app.get('/filters')
+def filters(db: Session = Depends(get_db)):
+    sets = db.execute(
+        select(CardSet.id, CardSet.name).order_by(CardSet.release_date.desc().nulls_last())
+    ).all()
+    rarities = db.scalars(
+        select(Card.rarity).where(Card.rarity.is_not(None)).distinct().order_by(Card.rarity)
+    ).all()
+    supertypes = db.scalars(
+        select(Card.supertype).where(Card.supertype.is_not(None)).distinct().order_by(Card.supertype)
+    ).all()
+    return {
+        'sets': [{'id': s.id, 'name': s.name} for s in sets],
+        'rarities': rarities,
+        'supertypes': supertypes,
+        'types': TYPES,
+    }
+
+
+@app.get('/cards')
+def list_cards(
+    q: str | None = None,
+    set_id: str | None = None,
+    type: str | None = None,
+    rarity: str | None = None,
+    supertype: str | None = None,
+    owned: bool | None = None,
+    page: int = 1,
+    page_size: int = 40,
+    x_user_id: str | None = Header(None),
+    db: Session = Depends(get_db),
+):
+    stmt = select(Card)
+    if q:
+        stmt = stmt.where(Card.name.ilike('%' + q + '%'))
+    if set_id:
+        stmt = stmt.where(Card.set_id == set_id)
+    if type:
+        stmt = stmt.where(Card.types.contains([type]))
+    if rarity:
+        stmt = stmt.where(Card.rarity == rarity)
+    if supertype:
+        stmt = stmt.where(Card.supertype == supertype)
+    if owned is not None and x_user_id:
+        mine = select(CollectionItem.card_id).where(CollectionItem.user_id == x_user_id)
+        stmt = stmt.where(Card.id.in_(mine) if owned else Card.id.not_in(mine))
+
+    total = db.scalar(select(func.count()).select_from(stmt.subquery()))
+    page = max(page, 1)
+    page_size = min(max(page_size, 1), 100)
+    rows = db.scalars(
+        stmt.options(*LOAD_ALL)
+        .order_by(Card.name, Card.id)
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    ).all()
+    return {'total': total, 'page': page, 'items': [card_out(c) for c in rows]}
+
+
+@app.get('/cards/{card_id}')
+def get_card(card_id: str, db: Session = Depends(get_db)):
+    c = db.scalar(select(Card).options(*LOAD_ALL).where(Card.id == card_id))
+    if not c:
+        raise HTTPException(404, 'Carta no encontrada')
+    return card_out(c)
