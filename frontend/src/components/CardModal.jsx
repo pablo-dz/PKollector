@@ -1,12 +1,27 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { api } from '../api';
 
-export default function CardModal({ card, qty = 0, onChangeQty, onClose }) {
+const EMPTY = { rules: [], abilities: [], attacks: [], weaknesses: [], resistances: [], retreat_cost: [] };
+
+export default function CardModal({ card: summary, qty = 0, onChangeQty, onClose }) {
+  const [full, setFull] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api('/cards/' + summary.id)
+      .then((c) => { if (!cancelled) setFull(c); })
+      .catch((e) => { if (!cancelled) setError(e.message); });
+    return () => { cancelled = true; };
+  }, [summary.id]);
+
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
+  const card = full ?? { ...EMPTY, ...summary };
   const pair = (list) => list.map((x) => x.type + ' ' + x.value).join(', ');
 
   return (
@@ -20,14 +35,16 @@ export default function CardModal({ card, qty = 0, onChangeQty, onClose }) {
           </p>
           <p>
             {card.supertype}
-            {card.subtypes.length > 0 && ' · ' + card.subtypes.join(', ')}
+            {card.subtypes?.length > 0 && ' · ' + card.subtypes.join(', ')}
             {card.hp && ' · HP ' + card.hp}
-            {card.types.length > 0 && ' · ' + card.types.join(', ')}
+            {card.types?.length > 0 && ' · ' + card.types.join(', ')}
           </p>
+
+          {!full && !error && <p className='muted'>Cargando detalle...</p>}
+          {error && <p className='error'>No se pudo cargar el detalle: {error}</p>}
+
           {card.evolves_from && <p>Evoluciona de: {card.evolves_from}</p>}
-
           {card.rules.map((r, i) => <p key={i}><i>{r}</i></p>)}
-
           {card.abilities.map((a) => (
             <p key={a.name}><b>{a.type}: {a.name}</b><br />{a.text}</p>
           ))}

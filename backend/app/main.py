@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session, joinedload, selectinload
-
+from fastapi.middleware.gzip import GZipMiddleware
 from .db import SessionLocal
 from .models import Card, CardSet, CollectionItem
 
@@ -18,6 +18,7 @@ app.add_middleware(
     allow_methods=['*'],
     allow_headers=['*'],
 )
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Los 11 tipos que devuelve GET /v2/types de la API
 TYPES = ['Colorless', 'Darkness', 'Dragon', 'Fairy', 'Fighting', 'Fire',
@@ -63,6 +64,14 @@ def card_out(c: Card):
                       'prices': c.tcgplayer_prices},
         'cardmarket': {'url': c.cardmarket_url, 'updated_at': iso(c.cardmarket_updated_at),
                        'prices': c.cardmarket_prices},
+    }
+    
+def card_summary(c: Card):
+    return {
+        'id': c.id, 'name': c.name, 'supertype': c.supertype, 'subtypes': c.subtypes,
+        'types': c.types, 'hp': c.hp, 'rarity': c.rarity, 'number': c.number,
+        'set_id': c.set_id, 'set_name': c.card_set.name,
+        'image_small': c.image_small, 'image_large': c.image_large,
     }
 
 
@@ -131,12 +140,12 @@ def list_cards(
     page = max(page, 1)
     page_size = min(max(page_size, 1), 100)
     rows = db.scalars(
-        stmt.options(*LOAD_ALL)
+        stmt.options(joinedload(Card.card_set))
         .order_by(Card.name, Card.id)
         .offset((page - 1) * page_size)
         .limit(page_size)
     ).all()
-    return {'total': total, 'page': page, 'items': [card_out(c) for c in rows]}
+    return {'total': total, 'page': page, 'items': [card_summary(c) for c in rows]}
 
 
 @app.get('/cards/{card_id}')
