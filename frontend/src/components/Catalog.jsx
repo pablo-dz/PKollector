@@ -14,7 +14,10 @@ function useDebounce(value, ms = 350) {
   return v;
 }
 
-export default function Catalog({ owned = {}, onChangeQty, onlyOwned = false }) {
+export default function Catalog({
+  owned = {}, onChangeQty, onlyOwned = false,
+  wishlist = {}, onToggleWish, fixed = {}, showExtras = false,
+}) {
   const [filters, setFilters] = useState(EMPTY);
   const [options, setOptions] = useState({ sets: [], rarities: [], supertypes: [], types: [] });
   const [page, setPage] = useState(1);
@@ -24,7 +27,9 @@ export default function Catalog({ owned = {}, onChangeQty, onlyOwned = false }) 
   const [selected, setSelected] = useState(null);
 
   const q = useDebounce(filters.q);
-  const queryKey = JSON.stringify([q, filters.set_id, filters.type, filters.rarity, filters.supertype, filters.owned, onlyOwned]);
+  const queryKey = JSON.stringify([
+    q, filters.set_id, filters.type, filters.rarity, filters.supertype, filters.owned, onlyOwned, fixed,
+  ]);
 
   useEffect(() => {
     api('/filters').then(setOptions).catch((e) => setError(e.message));
@@ -33,7 +38,7 @@ export default function Catalog({ owned = {}, onChangeQty, onlyOwned = false }) 
   useEffect(() => {
     let cancelled = false;
     const params = new URLSearchParams({ page, page_size: PAGE_SIZE });
-    const f = { ...filters, q };
+    const f = { ...filters, q, ...fixed };
     if (onlyOwned) f.owned = 'true';
     Object.entries(f).forEach(([k, v]) => {
       if (v) params.set(k, v);
@@ -91,8 +96,17 @@ export default function Catalog({ owned = {}, onChangeQty, onlyOwned = false }) 
 
       <div className='grid'>
         {data.items.map((c) => (
-        <div key={c.id} className={'tile' + (owned[c.id] ? ' owned' : '')}>
+          <div key={c.id} className={'tile' + (owned[c.id] ? ' owned' : '')}>
             <img src={c.image_small} alt={c.name} loading='lazy' onClick={() => setSelected(c)} />
+            {onToggleWish && (
+              <button
+                className={'star' + (wishlist[c.id] ? ' on' : '')}
+                title='Lista de deseos'
+                onClick={() => onToggleWish(c.id)}
+              >
+                {wishlist[c.id] ? '★' : '☆'}
+              </button>
+            )}
             <div className='tile-info'>
               <span title={c.name}>{c.name}</span>
               {onChangeQty && (
@@ -103,6 +117,7 @@ export default function Catalog({ owned = {}, onChangeQty, onlyOwned = false }) 
                 </div>
               )}
             </div>
+            {showExtras && owned[c.id] > 1 && <div className='num'>Te sobran {owned[c.id] - 1}</div>}
           </div>
         ))}
       </div>
@@ -120,6 +135,8 @@ export default function Catalog({ owned = {}, onChangeQty, onlyOwned = false }) 
           card={selected}
           qty={owned[selected.id] || 0}
           onChangeQty={onChangeQty}
+          wanted={!!wishlist[selected.id]}
+          onToggleWish={onToggleWish}
           onClose={() => setSelected(null)}
         />
       )}

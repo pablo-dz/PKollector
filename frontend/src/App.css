@@ -34,3 +34,6 @@ button.active { background: #2563eb; border-color: #2563eb; }
 .tile.missing img { opacity: 0.4; }
 .num { opacity: 0.6; font-size: 12px; }
 .link { background: none; border: none; padding: 0; color: #93c5fd; text-decoration: underline; cursor: pointer; font: inherit; }
+.tile { position: relative; }
+.star { position: absolute; top: 12px; right: 12px; padding: 2px 8px; font-size: 16px; line-height: 1.2; background: rgba(17, 24, 39, 0.85); }
+.star.on { color: #facc15; border-color: #facc15; }

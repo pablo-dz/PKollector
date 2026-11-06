@@ -2,20 +2,26 @@ import { useEffect, useState } from 'react';
 import { api } from './api';
 import Catalog from './components/Catalog';
 import Progress from './components/Progress';
-import './App.css';
 import SetView from './components/SetView';
+import './App.css';
 
+const TABS = [
+  ['catalog', 'Catálogo'], ['sets', 'Sets'], ['mine', 'Mi colección'],
+  ['dups', 'Repetidas'], ['wishlist', 'Deseos'], ['progress', 'Progreso'],
+];
 
-const TABS = [['catalog', 'Catálogo'], ['sets', 'Sets'], ['mine', 'Mi colección'], ['progress', 'Progreso']];
+const idsToMap = (ids) => Object.fromEntries(ids.map((id) => [id, true]));
 
 export default function App() {
   const [tab, setTab] = useState('catalog');
   const [owned, setOwned] = useState({});
+  const [wishlist, setWishlist] = useState({});
   const [version, setVersion] = useState(0);
   const [setId, setSetId] = useState('');
 
   useEffect(() => {
     api('/collection').then(setOwned).catch(console.error);
+    api('/wishlist').then((ids) => setWishlist(idsToMap(ids))).catch(console.error);
   }, []);
 
   const changeQty = async (cardId, qty) => {
@@ -35,6 +41,26 @@ export default function App() {
     }
   };
 
+  const toggleWish = async (cardId) => {
+    const wanted = !wishlist[cardId];
+    setWishlist((w) => {
+      const next = { ...w };
+      if (wanted) next[cardId] = true;
+      else delete next[cardId];
+      return next;
+    });
+    try {
+      await api('/wishlist/' + cardId, { method: 'PUT', body: JSON.stringify({ wanted }) });
+    } catch (e) {
+      console.error(e);
+      api('/wishlist').then((ids) => setWishlist(idsToMap(ids))).catch(console.error);
+    }
+  };
+
+  const dupCards = Object.values(owned).filter((q) => q > 1).length;
+  const extraCopies = Object.values(owned).reduce((s, q) => s + Math.max(q - 1, 0), 0);
+  const shared = { owned, onChangeQty: changeQty, wishlist, onToggleWish: toggleWish };
+
   return (
     <div className='app'>
       <h1>PKollector</h1>
@@ -45,17 +71,30 @@ export default function App() {
           </button>
         ))}
       </div>
-      {tab === 'catalog' && <Catalog owned={owned} onChangeQty={changeQty} />}
-      {tab === 'mine' && <Catalog owned={owned} onChangeQty={changeQty} onlyOwned />}
-      {tab === 'sets' && (
-        <SetView setId={setId} onChangeSetId={setSetId} owned={owned} onChangeQty={changeQty} />
+
+      {tab === 'catalog' && <Catalog {...shared} />}
+      {tab === 'sets' && <SetView {...shared} setId={setId} onChangeSetId={setSetId} />}
+      {tab === 'mine' && <Catalog {...shared} onlyOwned />}
+      {tab === 'dups' && (
+        <>
+          <p className='muted'>
+            Tienes {dupCards} cartas con copias de sobra ({extraCopies} copias para intercambiar).
+          </p>
+          <Catalog {...shared} fixed={{ duplicates: 'true' }} showExtras />
+        </>
+      )}
+      {tab === 'wishlist' && (
+        <>
+          <p className='muted'>{Object.keys(wishlist).length} cartas en tu lista de deseos.</p>
+          <Catalog {...shared} fixed={{ wanted: 'true' }} />
+        </>
       )}
       {tab === 'progress' && (
         <Progress
           refreshKey={version}
           onOpenSet={(id) => { setSetId(id); setTab('sets'); }}
         />
-      )}    
+      )}
     </div>
   );
 }

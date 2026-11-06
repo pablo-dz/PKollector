@@ -3,8 +3,7 @@ import { api } from '../api';
 
 const EMPTY = { rules: [], abilities: [], attacks: [], weaknesses: [], resistances: [], retreat_cost: [] };
 
-export default function CardModal({ card: summary, qty = 0, onChangeQty, onClose }) {
-  const [full, setFull] = useState(null);
+export default function CardModal({ card: summary, qty = 0, onChangeQty, wanted = false, onToggleWish, onClose }) {  const [full, setFull] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -70,7 +69,14 @@ export default function CardModal({ card: summary, qty = 0, onChangeQty, onClose
               <button onClick={() => onChangeQty(card.id, qty + 1)}>+</button>
             </div>
           )}
-          <p><button onClick={onClose}>Cerrar</button></p>
+          <p>
+            {onToggleWish && (
+              <button onClick={() => onToggleWish(card.id)}>
+                {wanted ? '★ En mi lista de deseos' : '☆ Agregar a deseos'}
+              </button>
+            )}{' '}
+            <button onClick={onClose}>Cerrar</button>
+          </p>        
         </div>
       </div>
     </div>

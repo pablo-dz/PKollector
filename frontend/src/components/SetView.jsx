@@ -4,8 +4,8 @@ import CardModal from './CardModal';
 
 const STATUS = [['all', 'Todas'], ['owned', 'Las que tengo'], ['missing', 'Me faltan']];
 
-export default function SetView({ setId, onChangeSetId, owned, onChangeQty }) {
-  const [sets, setSets] = useState([]);
+export default function SetView({ setId, onChangeSetId, owned, onChangeQty, wishlist = {}, onToggleWish }) 
+{  const [sets, setSets] = useState([]);
   const [info, setInfo] = useState(null);
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -84,6 +84,15 @@ export default function SetView({ setId, onChangeSetId, owned, onChangeQty }) {
             {visible.map((c) => (
               <div key={c.id} className={'tile' + (owned[c.id] ? ' owned' : ' missing')}>
                 <img src={c.image_small} alt={c.name} loading='lazy' onClick={() => setSelected(c)} />
+                                {onToggleWish && (
+                  <button
+                    className={'star' + (wishlist[c.id] ? ' on' : '')}
+                    title='Lista de deseos'
+                    onClick={() => onToggleWish(c.id)}
+                  >
+                    {wishlist[c.id] ? '★' : '☆'}
+                  </button>
+                )}
                 <div className='tile-info'>
                   <span title={c.name}><span className='num'>#{c.number}</span> {c.name}</span>
                   <div className='qty'>
@@ -105,6 +114,8 @@ export default function SetView({ setId, onChangeSetId, owned, onChangeQty }) {
           qty={owned[selected.id] || 0}
           onChangeQty={onChangeQty}
           onClose={() => setSelected(null)}
+          wanted={!!wishlist[selected.id]}
+          onToggleWish={onToggleWish}
         />
       )}
     </div>
