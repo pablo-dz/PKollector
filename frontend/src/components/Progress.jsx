@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 
-export default function Progress({ refreshKey }) {
+export default function Progress({ refreshKey, onOpenSet }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [onlyStarted, setOnlyStarted] = useState(true);
@@ -27,7 +27,8 @@ export default function Progress({ refreshKey }) {
       {sets.map((s) => (
         <div key={s.id} className='progress-row'>
           <div>
-            {s.name} <span className='muted'>({s.series})</span>: {s.owned}/{s.total} · faltan {s.total - s.owned}
+            <button className='link' onClick={() => onOpenSet(s.id)}>{s.name}</button>{' '}
+            <span className='muted'>({s.series})</span>: {s.owned}/{s.total} · faltan {s.total - s.owned}
           </div>
           <div className='bar'><div style={{ width: pct(s.owned, s.total) + '%' }} /></div>
         </div>

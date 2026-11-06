@@ -3,10 +3,11 @@ import os
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from sqlalchemy import and_, func, select
-from sqlalchemy.orm import Session, joinedload, selectinload
 from fastapi.middleware.gzip import GZipMiddleware
+from pydantic import BaseModel
+from sqlalchemy import BigInteger, and_, cast, func, select
+from sqlalchemy.orm import Session, joinedload, selectinload
+
 from .db import SessionLocal
 from .models import Card, CardSet, CollectionItem
 
@@ -32,6 +33,11 @@ def get_db():
 
 def iso(d):
     return d.isoformat() if d else None
+
+
+# Orden natural del número de carta: primero el prefijo de letras, luego el valor numérico
+NUM_PREFIX = func.regexp_replace(Card.number, '[0-9].*$', '')
+NUM_VALUE = cast(func.nullif(func.regexp_replace(Card.number, '[^0-9]', '', 'g'), ''), BigInteger)
 
 
 def card_out(c: Card):
@@ -65,7 +71,8 @@ def card_out(c: Card):
         'cardmarket': {'url': c.cardmarket_url, 'updated_at': iso(c.cardmarket_updated_at),
                        'prices': c.cardmarket_prices},
     }
-    
+
+
 def card_summary(c: Card):
     return {
         'id': c.id, 'name': c.name, 'supertype': c.supertype, 'subtypes': c.subtypes,
@@ -108,6 +115,19 @@ def filters(db: Session = Depends(get_db)):
     }
 
 
+@app.get('/sets/{set_id}')
+def get_set(set_id: str, db: Session = Depends(get_db)):
+    s = db.get(CardSet, set_id)
+    if not s:
+        raise HTTPException(404, 'Set no encontrado')
+    return {
+        'id': s.id, 'name': s.name, 'series': s.series,
+        'printed_total': s.printed_total, 'total': s.total,
+        'release_date': iso(s.release_date),
+        'image_logo': s.image_logo, 'image_symbol': s.image_symbol,
+    }
+
+
 @app.get('/cards')
 def list_cards(
     q: str | None = None,
@@ -116,6 +136,7 @@ def list_cards(
     rarity: str | None = None,
     supertype: str | None = None,
     owned: bool | None = None,
+    sort: str = 'name',
     page: int = 1,
     page_size: int = 40,
     x_user_id: str | None = Header(None),
@@ -138,10 +159,15 @@ def list_cards(
 
     total = db.scalar(select(func.count()).select_from(stmt.subquery()))
     page = max(page, 1)
-    page_size = min(max(page_size, 1), 100)
+    page_size = min(max(page_size, 1), 1000)
+    order = (
+        (NUM_PREFIX, NUM_VALUE.nulls_last(), Card.number, Card.id)
+        if sort == 'number'
+        else (Card.name, Card.id)
+    )
     rows = db.scalars(
         stmt.options(joinedload(Card.card_set))
-        .order_by(Card.name, Card.id)
+        .order_by(*order)
         .offset((page - 1) * page_size)
         .limit(page_size)
     ).all()

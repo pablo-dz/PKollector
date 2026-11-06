@@ -3,13 +3,16 @@ import { api } from './api';
 import Catalog from './components/Catalog';
 import Progress from './components/Progress';
 import './App.css';
+import SetView from './components/SetView';
 
-const TABS = [['catalog', 'Catálogo'], ['mine', 'Mi colección'], ['progress', 'Progreso']];
+
+const TABS = [['catalog', 'Catálogo'], ['sets', 'Sets'], ['mine', 'Mi colección'], ['progress', 'Progreso']];
 
 export default function App() {
   const [tab, setTab] = useState('catalog');
   const [owned, setOwned] = useState({});
   const [version, setVersion] = useState(0);
+  const [setId, setSetId] = useState('');
 
   useEffect(() => {
     api('/collection').then(setOwned).catch(console.error);
@@ -44,7 +47,15 @@ export default function App() {
       </div>
       {tab === 'catalog' && <Catalog owned={owned} onChangeQty={changeQty} />}
       {tab === 'mine' && <Catalog owned={owned} onChangeQty={changeQty} onlyOwned />}
-      {tab === 'progress' && <Progress refreshKey={version} />}
+      {tab === 'sets' && (
+        <SetView setId={setId} onChangeSetId={setSetId} owned={owned} onChangeQty={changeQty} />
+      )}
+      {tab === 'progress' && (
+        <Progress
+          refreshKey={version}
+          onOpenSet={(id) => { setSetId(id); setTab('sets'); }}
+        />
+      )}    
     </div>
   );
 }
