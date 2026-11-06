@@ -9,7 +9,7 @@ from sqlalchemy import BigInteger, and_, cast, func, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from .db import SessionLocal
-from .models import Card, CardSet, CollectionItem
+from .models import Card, CardSet, CollectionItem, WishlistItem
 
 load_dotenv()
 app = FastAPI(title='PKollector API')
@@ -136,6 +136,8 @@ def list_cards(
     rarity: str | None = None,
     supertype: str | None = None,
     owned: bool | None = None,
+    wanted: bool | None = None,
+    duplicates: bool | None = None,
     sort: str = 'name',
     page: int = 1,
     page_size: int = 40,
@@ -156,6 +158,13 @@ def list_cards(
     if owned is not None and x_user_id:
         mine = select(CollectionItem.card_id).where(CollectionItem.user_id == x_user_id)
         stmt = stmt.where(Card.id.in_(mine) if owned else Card.id.not_in(mine))
+    if wanted and x_user_id:
+        wished = select(WishlistItem.card_id).where(WishlistItem.user_id == x_user_id)
+        stmt = stmt.where(Card.id.in_(wished))
+    if duplicates and x_user_id:
+        dups = select(CollectionItem.card_id).where(
+            CollectionItem.user_id == x_user_id, CollectionItem.quantity > 1)
+        stmt = stmt.where(Card.id.in_(dups))
 
     total = db.scalar(select(func.count()).select_from(stmt.subquery()))
     page = max(page, 1)
@@ -184,6 +193,10 @@ def get_card(card_id: str, db: Session = Depends(get_db)):
 
 class QtyBody(BaseModel):
     quantity: int
+
+
+class WantBody(BaseModel):
+    wanted: bool
 
 
 def need_user(x_user_id: str | None = Header(None)):
@@ -219,6 +232,30 @@ def set_quantity(card_id: str, body: QtyBody,
         db.add(CollectionItem(user_id=user_id, card_id=card_id, quantity=body.quantity))
     db.commit()
     return {'card_id': card_id, 'quantity': max(body.quantity, 0)}
+
+
+@app.get('/wishlist')
+def my_wishlist(user_id: str = Depends(need_user), db: Session = Depends(get_db)):
+    return db.scalars(
+        select(WishlistItem.card_id).where(WishlistItem.user_id == user_id)
+    ).all()
+
+
+@app.put('/wishlist/{card_id}')
+def set_wanted(card_id: str, body: WantBody,
+               user_id: str = Depends(need_user), db: Session = Depends(get_db)):
+    if not db.get(Card, card_id):
+        raise HTTPException(404, 'Carta no encontrada')
+    item = db.scalar(
+        select(WishlistItem).where(
+            WishlistItem.user_id == user_id, WishlistItem.card_id == card_id)
+    )
+    if body.wanted and not item:
+        db.add(WishlistItem(user_id=user_id, card_id=card_id))
+    elif not body.wanted and item:
+        db.delete(item)
+    db.commit()
+    return {'card_id': card_id, 'wanted': body.wanted}
 
 
 @app.get('/progress')
