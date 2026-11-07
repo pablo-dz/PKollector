@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 from .db import SessionLocal
 from .models import Card, CardSet, CollectionItem, WishlistItem
+from .accounts import router as accounts_router
 
 load_dotenv()
 app = FastAPI(title='PKollector API')
@@ -20,6 +21,7 @@ app.add_middleware(
     allow_headers=['*'],
 )
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+app.include_router(accounts_router)
 
 # Los 11 tipos que devuelve GET /v2/types de la API
 TYPES = ['Colorless', 'Darkness', 'Dragon', 'Fairy', 'Fighting', 'Fire',

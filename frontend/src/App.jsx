@@ -4,6 +4,7 @@ import Catalog from './components/Catalog';
 import Progress from './components/Progress';
 import SetView from './components/SetView';
 import './App.css';
+import AccountBar from './components/AccountBar';
 
 const TABS = [
   ['catalog', 'Catálogo'], ['sets', 'Sets'], ['mine', 'Mi colección'],
@@ -63,7 +64,10 @@ export default function App() {
 
   return (
     <div className='app'>
-      <h1>PKollector</h1>
+      <div className='topbar'>
+        <h1>PKollector</h1>
+        <AccountBar />
+      </div>
       <div className='tabs'>
         {TABS.map(([id, label]) => (
           <button key={id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}>
