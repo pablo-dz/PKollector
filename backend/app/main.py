@@ -1,16 +1,17 @@
 import os
+import time
 
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel
-from sqlalchemy import BigInteger, and_, cast, func, select
-from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy import BigInteger, Integer, and_, cast, func, select
+from sqlalchemy.orm import Session, contains_eager, joinedload, selectinload
 
+from .accounts import router as accounts_router
 from .db import SessionLocal
 from .models import Card, CardSet, CollectionItem, WishlistItem
-from .accounts import router as accounts_router
 
 load_dotenv()
 app = FastAPI(title='PKollector API')
@@ -40,6 +41,19 @@ def iso(d):
 # Orden natural del número de carta: primero el prefijo de letras, luego el valor numérico
 NUM_PREFIX = func.regexp_replace(Card.number, '[0-9].*$', '')
 NUM_VALUE = cast(func.nullif(func.regexp_replace(Card.number, '[^0-9]', '', 'g'), ''), BigInteger)
+# HP como número (en la base es texto)
+HP_VALUE = cast(func.nullif(func.regexp_replace(Card.hp, '[^0-9]', '', 'g'), ''), Integer)
+
+ORDERS = {
+    'name': (Card.name, Card.id),
+    'number': (NUM_PREFIX, NUM_VALUE.nulls_last(), Card.number, Card.id),
+    'newest': (CardSet.release_date.desc().nulls_last(), CardSet.id,
+               NUM_PREFIX, NUM_VALUE.nulls_last(), Card.number, Card.id),
+    'oldest': (CardSet.release_date.asc().nulls_last(), CardSet.id,
+               NUM_PREFIX, NUM_VALUE.nulls_last(), Card.number, Card.id),
+    'hp_desc': (HP_VALUE.desc().nulls_last(), Card.name, Card.id),
+    'hp_asc': (HP_VALUE.asc().nulls_last(), Card.name, Card.id),
+}
 
 
 def card_out(c: Card):
@@ -98,10 +112,26 @@ def health():
     return {'ok': True}
 
 
+# Las opciones de los filtros casi no cambian: se recuerdan 10 minutos
+FILTERS_TTL = 600
+_filters_cache = {'at': 0.0, 'data': None}
+
+
 @app.get('/filters')
 def filters(db: Session = Depends(get_db)):
+    now = time.time()
+    if _filters_cache['data'] and now - _filters_cache['at'] < FILTERS_TTL:
+        return _filters_cache['data']
+
     sets = db.execute(
-        select(CardSet.id, CardSet.name).order_by(CardSet.release_date.desc().nulls_last())
+        select(CardSet.id, CardSet.name, CardSet.series)
+        .order_by(CardSet.release_date.desc().nulls_last())
+    ).all()
+    series = db.scalars(
+        select(CardSet.series)
+        .where(CardSet.series.is_not(None))
+        .group_by(CardSet.series)
+        .order_by(func.max(CardSet.release_date).desc().nulls_last())
     ).all()
     rarities = db.scalars(
         select(Card.rarity).where(Card.rarity.is_not(None)).distinct().order_by(Card.rarity)
@@ -109,12 +139,19 @@ def filters(db: Session = Depends(get_db)):
     supertypes = db.scalars(
         select(Card.supertype).where(Card.supertype.is_not(None)).distinct().order_by(Card.supertype)
     ).all()
-    return {
-        'sets': [{'id': s.id, 'name': s.name} for s in sets],
+    unnested = select(func.unnest(Card.subtypes).label('s')).subquery()
+    subtypes = db.scalars(select(unnested.c.s).distinct().order_by(unnested.c.s)).all()
+
+    data = {
+        'sets': [{'id': s.id, 'name': s.name, 'series': s.series} for s in sets],
+        'series': series,
         'rarities': rarities,
         'supertypes': supertypes,
+        'subtypes': subtypes,
         'types': TYPES,
     }
+    _filters_cache.update(at=now, data=data)
+    return data
 
 
 @app.get('/sets/{set_id}')
@@ -134,9 +171,13 @@ def get_set(set_id: str, db: Session = Depends(get_db)):
 def list_cards(
     q: str | None = None,
     set_id: str | None = None,
+    series: str | None = None,
     type: str | None = None,
+    subtype: str | None = None,
     rarity: str | None = None,
     supertype: str | None = None,
+    hp_min: int | None = None,
+    hp_max: int | None = None,
     owned: bool | None = None,
     wanted: bool | None = None,
     duplicates: bool | None = None,
@@ -146,17 +187,25 @@ def list_cards(
     x_user_id: str | None = Header(None),
     db: Session = Depends(get_db),
 ):
-    stmt = select(Card)
+    stmt = select(Card).join(Card.card_set)
     if q:
         stmt = stmt.where(Card.name.ilike('%' + q + '%'))
     if set_id:
         stmt = stmt.where(Card.set_id == set_id)
+    if series:
+        stmt = stmt.where(CardSet.series == series)
     if type:
         stmt = stmt.where(Card.types.contains([type]))
+    if subtype:
+        stmt = stmt.where(Card.subtypes.contains([subtype]))
     if rarity:
         stmt = stmt.where(Card.rarity == rarity)
     if supertype:
         stmt = stmt.where(Card.supertype == supertype)
+    if hp_min is not None:
+        stmt = stmt.where(HP_VALUE >= hp_min)
+    if hp_max is not None:
+        stmt = stmt.where(HP_VALUE <= hp_max)
     if owned is not None and x_user_id:
         mine = select(CollectionItem.card_id).where(CollectionItem.user_id == x_user_id)
         stmt = stmt.where(Card.id.in_(mine) if owned else Card.id.not_in(mine))
@@ -171,13 +220,9 @@ def list_cards(
     total = db.scalar(select(func.count()).select_from(stmt.subquery()))
     page = max(page, 1)
     page_size = min(max(page_size, 1), 1000)
-    order = (
-        (NUM_PREFIX, NUM_VALUE.nulls_last(), Card.number, Card.id)
-        if sort == 'number'
-        else (Card.name, Card.id)
-    )
+    order = ORDERS.get(sort, ORDERS['name'])
     rows = db.scalars(
-        stmt.options(joinedload(Card.card_set))
+        stmt.options(contains_eager(Card.card_set))
         .order_by(*order)
         .offset((page - 1) * page_size)
         .limit(page_size)

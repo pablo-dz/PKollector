@@ -3,7 +3,18 @@ import { api } from '../api';
 import CardModal from './CardModal';
 
 const PAGE_SIZE = 40;
-const EMPTY = { q: '', set_id: '', type: '', rarity: '', supertype: '', owned: '' };
+const EMPTY = {
+  q: '', set_id: '', series: '', type: '', subtype: '', rarity: '', supertype: '',
+  hp_min: '', hp_max: '', owned: '', sort: 'name',
+};
+const SORTS = [
+  ['name', 'Nombre (A-Z)'],
+  ['newest', 'Más nuevas primero'],
+  ['oldest', 'Más antiguas primero'],
+  ['hp_desc', 'HP de mayor a menor'],
+  ['hp_asc', 'HP de menor a mayor'],
+  ['number', 'Número de carta'],
+];
 
 function useDebounce(value, ms = 350) {
   const [v, setV] = useState(value);
@@ -19,7 +30,9 @@ export default function Catalog({
   wishlist = {}, onToggleWish, fixed = {}, showExtras = false,
 }) {
   const [filters, setFilters] = useState(EMPTY);
-  const [options, setOptions] = useState({ sets: [], rarities: [], supertypes: [], types: [] });
+  const [options, setOptions] = useState({
+    sets: [], series: [], rarities: [], supertypes: [], subtypes: [], types: [],
+  });
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ items: [], total: 0 });
   const [loading, setLoading] = useState(false);
@@ -27,9 +40,12 @@ export default function Catalog({
   const [selected, setSelected] = useState(null);
 
   const q = useDebounce(filters.q);
-  const queryKey = JSON.stringify([
-    q, filters.set_id, filters.type, filters.rarity, filters.supertype, filters.owned, onlyOwned, fixed,
-  ]);
+  const hpMin = useDebounce(filters.hp_min);
+  const hpMax = useDebounce(filters.hp_max);
+
+  const applied = { ...filters, q, hp_min: hpMin, hp_max: hpMax, ...fixed };
+  if (onlyOwned) applied.owned = 'true';
+  const queryKey = JSON.stringify(applied);
 
   useEffect(() => {
     api('/filters').then(setOptions).catch((e) => setError(e.message));
@@ -38,10 +54,8 @@ export default function Catalog({
   useEffect(() => {
     let cancelled = false;
     const params = new URLSearchParams({ page, page_size: PAGE_SIZE });
-    const f = { ...filters, q, ...fixed };
-    if (onlyOwned) f.owned = 'true';
-    Object.entries(f).forEach(([k, v]) => {
-      if (v) params.set(k, v);
+    Object.entries(applied).forEach(([k, v]) => {
+      if (v !== '' && v != null) params.set(k, v);
     });
     setLoading(true);
     setError(null);
@@ -57,15 +71,41 @@ export default function Catalog({
     setFilters((f) => ({ ...f, [key]: e.target.value }));
     setPage(1);
   };
+  // Al cambiar de serie, el set elegido se limpia (puede no pertenecer a esa serie)
+  const updateSeries = (e) => {
+    setFilters((f) => ({ ...f, series: e.target.value, set_id: '' }));
+    setPage(1);
+  };
+  const clear = () => {
+    setFilters(EMPTY);
+    setPage(1);
+  };
+
+  const setsShown = filters.series
+    ? options.sets.filter((s) => s.series === filters.series)
+    : options.sets;
+  const hasFilters = JSON.stringify(filters) !== JSON.stringify(EMPTY);
   const pages = Math.max(1, Math.ceil(data.total / PAGE_SIZE));
 
   return (
     <div>
       <div className='filters'>
         <input placeholder='Buscar por nombre...' value={filters.q} onChange={update('q')} />
+        <select value={filters.series} onChange={updateSeries}>
+          <option value=''>Todas las series</option>
+          {options.series.map((s) => <option key={s}>{s}</option>)}
+        </select>
         <select value={filters.set_id} onChange={update('set_id')}>
           <option value=''>Todos los sets</option>
-          {options.sets.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          {setsShown.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
+        <select value={filters.supertype} onChange={update('supertype')}>
+          <option value=''>Todas las categorías</option>
+          {options.supertypes.map((s) => <option key={s}>{s}</option>)}
+        </select>
+        <select value={filters.subtype} onChange={update('subtype')}>
+          <option value=''>Todos los subtipos</option>
+          {options.subtypes.map((s) => <option key={s}>{s}</option>)}
         </select>
         <select value={filters.type} onChange={update('type')}>
           <option value=''>Todos los tipos</option>
@@ -75,10 +115,14 @@ export default function Catalog({
           <option value=''>Todas las rarezas</option>
           {options.rarities.map((r) => <option key={r}>{r}</option>)}
         </select>
-        <select value={filters.supertype} onChange={update('supertype')}>
-          <option value=''>Todas las categorías</option>
-          {options.supertypes.map((s) => <option key={s}>{s}</option>)}
-        </select>
+        <input
+          className='small-input' type='number' min='0' placeholder='HP mín'
+          value={filters.hp_min} onChange={update('hp_min')}
+        />
+        <input
+          className='small-input' type='number' min='0' placeholder='HP máx'
+          value={filters.hp_max} onChange={update('hp_max')}
+        />
         {onChangeQty && !onlyOwned && (
           <select value={filters.owned} onChange={update('owned')}>
             <option value=''>Tengo y me faltan</option>
@@ -86,6 +130,10 @@ export default function Catalog({
             <option value='false'>Solo las que me faltan</option>
           </select>
         )}
+        <select value={filters.sort} onChange={update('sort')} title='Ordenar por'>
+          {SORTS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+        </select>
+        {hasFilters && <button onClick={clear}>Limpiar filtros</button>}
       </div>
 
       {error ? (
