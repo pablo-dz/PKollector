@@ -38,16 +38,18 @@ export default function AccountBar() {
   if (username) {
     return (
       <div className='account'>
-        Hola, <b>{username}</b>{' '}
-        <button onClick={() => { logout(); window.location.reload(); }}>Cerrar sesión</button>
+        <span className='nav-user'>Hola, {username}</span>
+        <button className='nav-btn' onClick={() => { logout(); window.location.reload(); }}>
+          Cerrar sesión
+        </button>
       </div>
     );
   }
 
   return (
     <div className='account'>
-      <button onClick={() => setMode('login')}>Iniciar sesión</button>{' '}
-      <button onClick={() => setMode('register')}>Crear cuenta</button>
+      <button className='nav-btn' onClick={() => setMode('login')}>Iniciar sesión</button>
+      <button className='nav-btn' onClick={() => setMode('register')}>Crear cuenta</button>
       {mode && (
         <div className='overlay' onClick={close}>
           <form className='auth-box' onClick={(e) => e.stopPropagation()} onSubmit={submit}>

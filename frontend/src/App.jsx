@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { api } from './api';
+import AccountBar from './components/AccountBar';
 import Catalog from './components/Catalog';
+import Navbar from './components/Navbar';
 import Progress from './components/Progress';
 import SetView from './components/SetView';
 import './App.css';
-import AccountBar from './components/AccountBar';
 
 const TABS = [
   ['catalog', 'Catálogo'], ['sets', 'Sets'], ['mine', 'Mi colección'],
@@ -63,42 +64,43 @@ export default function App() {
   const shared = { owned, onChangeQty: changeQty, wishlist, onToggleWish: toggleWish };
 
   return (
-    <div className='app'>
-      <div className='topbar'>
-        <h1>PKollector</h1>
+    <>
+      <Navbar tabs={TABS} tab={tab} onTab={setTab}>
         <AccountBar />
-      </div>
-      <div className='tabs'>
-        {TABS.map(([id, label]) => (
-          <button key={id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}>
-            {label}
-          </button>
-        ))}
-      </div>
+      </Navbar>
 
-      {tab === 'catalog' && <Catalog {...shared} />}
-      {tab === 'sets' && <SetView {...shared} setId={setId} onChangeSetId={setSetId} />}
-      {tab === 'mine' && <Catalog {...shared} onlyOwned />}
-      {tab === 'dups' && (
-        <>
-          <p className='muted'>
-            Tienes {dupCards} cartas con copias de sobra ({extraCopies} copias para intercambiar).
-          </p>
-          <Catalog {...shared} fixed={{ duplicates: 'true' }} showExtras />
-        </>
-      )}
-      {tab === 'wishlist' && (
-        <>
-          <p className='muted'>{Object.keys(wishlist).length} cartas en tu lista de deseos.</p>
-          <Catalog {...shared} fixed={{ wanted: 'true' }} />
-        </>
-      )}
-      {tab === 'progress' && (
-        <Progress
-          refreshKey={version}
-          onOpenSet={(id) => { setSetId(id); setTab('sets'); }}
-        />
-      )}
-    </div>
+      <main className='app'>
+        <h1 className='sr-only'>PKollector</h1>
+
+        {tab === 'catalog' && <Catalog {...shared} />}
+        {tab === 'sets' && <SetView {...shared} setId={setId} onChangeSetId={setSetId} />}
+        {tab === 'mine' && <Catalog {...shared} onlyOwned />}
+        {tab === 'dups' && (
+          <>
+            <p className='muted'>
+              Tienes {dupCards} cartas con copias de sobra ({extraCopies} copias para intercambiar).
+            </p>
+            <Catalog {...shared} fixed={{ duplicates: 'true' }} showExtras />
+          </>
+        )}
+        {tab === 'wishlist' && (
+          <>
+            <p className='muted'>{Object.keys(wishlist).length} cartas en tu lista de deseos.</p>
+            <Catalog {...shared} fixed={{ wanted: 'true' }} />
+          </>
+        )}
+        {tab === 'progress' && (
+          <Progress
+            refreshKey={version}
+            onOpenSet={(id) => { setSetId(id); setTab('sets'); }}
+          />
+        )}
+      </main>
+
+      <footer className='footer'>
+        PKollector es un proyecto fan sin fines de lucro, no afiliado a Nintendo, Creatures, GAME FREAK ni The
+        Pokémon Company. Pokémon y sus nombres son marcas de sus respectivos dueños.
+      </footer>
+    </>
   );
 }
