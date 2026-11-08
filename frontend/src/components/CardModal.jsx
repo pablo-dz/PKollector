@@ -30,7 +30,7 @@ export default function CardModal({ card: summary, qty = 0, onChangeQty, wanted 
         <div className='modal-body'>
           <h2>{card.name}</h2>
           <p className='muted'>
-            {card.set_name} · #{card.number} · {card.rarity || 'Unknown rarity'}
+            {card.set_name} · #{card.number} · {card.rarity || 'No rarity'}
           </p>
           <p>
             {card.supertype}
