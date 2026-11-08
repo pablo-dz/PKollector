@@ -8,12 +8,12 @@ const EMPTY = {
   hp_min: '', hp_max: '', owned: '', sort: 'name',
 };
 const SORTS = [
-  ['name', 'Nombre (A-Z)'],
-  ['newest', 'Más nuevas primero'],
-  ['oldest', 'Más antiguas primero'],
-  ['hp_desc', 'HP de mayor a menor'],
-  ['hp_asc', 'HP de menor a mayor'],
-  ['number', 'Número de carta'],
+  ['name', 'Name (A-Z)'],
+  ['newest', 'Newest First'],
+  ['oldest', 'Oldest First'],
+  ['hp_desc', 'HP Highest to Lowest'],
+  ['hp_asc', 'HP Lowest to Highest'],
+  ['number', 'Card Number'],
 ];
 
 function useDebounce(value, ms = 350) {
@@ -71,7 +71,7 @@ export default function Catalog({
     setFilters((f) => ({ ...f, [key]: e.target.value }));
     setPage(1);
   };
-  // Al cambiar de serie, el set elegido se limpia (puede no pertenecer a esa serie)
+  // When the series changes, clear the selected set in case it belongs to another series.
   const updateSeries = (e) => {
     setFilters((f) => ({ ...f, series: e.target.value, set_id: '' }));
     setPage(1);
@@ -90,56 +90,56 @@ export default function Catalog({
   return (
     <div>
       <div className='filters'>
-        <input placeholder='Buscar por nombre...' value={filters.q} onChange={update('q')} />
+        <input placeholder='Search by name...' value={filters.q} onChange={update('q')} />
         <select value={filters.series} onChange={updateSeries}>
-          <option value=''>Todas las series</option>
+          <option value=''>All Series</option>
           {options.series.map((s) => <option key={s}>{s}</option>)}
         </select>
         <select value={filters.set_id} onChange={update('set_id')}>
-          <option value=''>Todos los sets</option>
+          <option value=''>All Sets</option>
           {setsShown.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
         <select value={filters.supertype} onChange={update('supertype')}>
-          <option value=''>Todas las categorías</option>
+          <option value=''>All Categories</option>
           {options.supertypes.map((s) => <option key={s}>{s}</option>)}
         </select>
         <select value={filters.subtype} onChange={update('subtype')}>
-          <option value=''>Todos los subtipos</option>
+          <option value=''>All Subtypes</option>
           {options.subtypes.map((s) => <option key={s}>{s}</option>)}
         </select>
         <select value={filters.type} onChange={update('type')}>
-          <option value=''>Todos los tipos</option>
+          <option value=''>All Types</option>
           {options.types.map((t) => <option key={t}>{t}</option>)}
         </select>
         <select value={filters.rarity} onChange={update('rarity')}>
-          <option value=''>Todas las rarezas</option>
+          <option value=''>All Rarities</option>
           {options.rarities.map((r) => <option key={r}>{r}</option>)}
         </select>
         <input
-          className='small-input' type='number' min='0' placeholder='HP mín'
+          className='small-input' type='number' min='0' placeholder='Min HP'
           value={filters.hp_min} onChange={update('hp_min')}
         />
         <input
-          className='small-input' type='number' min='0' placeholder='HP máx'
+          className='small-input' type='number' min='0' placeholder='Max HP'
           value={filters.hp_max} onChange={update('hp_max')}
         />
         {onChangeQty && !onlyOwned && (
           <select value={filters.owned} onChange={update('owned')}>
-            <option value=''>Tengo y me faltan</option>
-            <option value='true'>Solo las que tengo</option>
-            <option value='false'>Solo las que me faltan</option>
+            <option value=''>Owned and missing</option>
+            <option value='true'>Only cards I own</option>
+            <option value='false'>Only cards I'm missing</option>
           </select>
         )}
-        <select value={filters.sort} onChange={update('sort')} title='Ordenar por'>
+        <select value={filters.sort} onChange={update('sort')} title='Sort by'>
           {SORTS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
         </select>
-        {hasFilters && <button onClick={clear}>Limpiar filtros</button>}
+        {hasFilters && <button onClick={clear}>Clear filters</button>}
       </div>
 
       {error ? (
-        <p className='error'>No se pudo cargar: {error}</p>
+        <p className='error'>Failed to load: {error}</p>
       ) : (
-        <p className='count'>{loading ? 'Cargando...' : data.total + ' cartas'}</p>
+        <p className='count'>{loading ? 'Loading...' : data.total + ' cards'}</p>
       )}
 
       <div className='grid'>
@@ -149,7 +149,7 @@ export default function Catalog({
             {onToggleWish && (
               <button
                 className={'star' + (wishlist[c.id] ? ' on' : '')}
-                title='Lista de deseos'
+                title='Wishlist'
                 onClick={() => onToggleWish(c.id)}
               >
                 {wishlist[c.id] ? '★' : '☆'}
@@ -165,17 +165,17 @@ export default function Catalog({
                 </div>
               )}
             </div>
-            {showExtras && owned[c.id] > 1 && <div className='num'>Te sobran {owned[c.id] - 1}</div>}
+            {showExtras && owned[c.id] > 1 && <div className='num'>You have {owned[c.id] - 1} extra</div>}
           </div>
         ))}
       </div>
 
-      {!loading && !error && data.items.length === 0 && <p className='muted'>No hay cartas con esos filtros.</p>}
+      {!loading && !error && data.items.length === 0 && <p className='muted'>No cards match those filters.</p>}
 
       <div className='pager'>
-        <button disabled={page <= 1} onClick={() => setPage(page - 1)}>Anterior</button>
-        <span>Página {page} de {pages}</span>
-        <button disabled={page >= pages} onClick={() => setPage(page + 1)}>Siguiente</button>
+        <button disabled={page <= 1} onClick={() => setPage(page - 1)}>Previous</button>
+        <span>Page {page} of {pages}</span>
+        <button disabled={page >= pages} onClick={() => setPage(page + 1)}>Next</button>
       </div>
 
       {selected && (

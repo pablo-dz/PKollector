@@ -66,7 +66,7 @@ button.active { background: #2563eb; border-color: #2563eb; }
 .nav-right { margin-left: auto; flex-shrink: 0; }
 .account { display: flex; align-items: center; gap: 10px; }
 
-/* Letra tipo logo de Pokémon: amarillo con contorno azul */
+/* Pokémon logo-style lettering: yellow with a blue outline */
 .navbar .nav-tab, .navbar .nav-btn, .nav-user {
   font-family: 'PokemonSolid', Impact, 'Arial Black', sans-serif;
   font-size: 1.05rem;
