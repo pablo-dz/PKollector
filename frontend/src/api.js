@@ -32,7 +32,7 @@ export async function api(path, options = {}) {
       const data = await res.json();
       if (typeof data.detail === 'string') msg = data.detail;
     } catch {
-      // la respuesta no traía detalle
+      // The response did not include details.
     }
     throw new Error(msg);
   }

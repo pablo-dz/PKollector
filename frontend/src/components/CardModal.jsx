@@ -30,7 +30,7 @@ export default function CardModal({ card: summary, qty = 0, onChangeQty, wanted 
         <div className='modal-body'>
           <h2>{card.name}</h2>
           <p className='muted'>
-            {card.set_name} · N° {card.number} · {card.rarity || 'Sin rareza'}
+            {card.set_name} · #{card.number} · {card.rarity || 'No rarity'}
           </p>
           <p>
             {card.supertype}
@@ -39,10 +39,10 @@ export default function CardModal({ card: summary, qty = 0, onChangeQty, wanted 
             {card.types?.length > 0 && ' · ' + card.types.join(', ')}
           </p>
 
-          {!full && !error && <p className='muted'>Cargando detalle...</p>}
-          {error && <p className='error'>No se pudo cargar el detalle: {error}</p>}
+          {!full && !error && <p className='muted'>Loading details...</p>}
+          {error && <p className='error'>Could not load details: {error}</p>}
 
-          {card.evolves_from && <p>Evoluciona de: {card.evolves_from}</p>}
+          {card.evolves_from && <p>Evolves from: {card.evolves_from}</p>}
           {card.rules.map((r, i) => <p key={i}><i>{r}</i></p>)}
           {card.abilities.map((a) => (
             <p key={a.name}><b>{a.type}: {a.name}</b><br />{a.text}</p>
@@ -55,27 +55,27 @@ export default function CardModal({ card: summary, qty = 0, onChangeQty, wanted 
             </p>
           ))}
 
-          {card.weaknesses.length > 0 && <p>Debilidad: {pair(card.weaknesses)}</p>}
-          {card.resistances.length > 0 && <p>Resistencia: {pair(card.resistances)}</p>}
-          {card.retreat_cost.length > 0 && <p>Retirada: {card.retreat_cost.length}</p>}
+          {card.weaknesses.length > 0 && <p>Weakness: {pair(card.weaknesses)}</p>}
+          {card.resistances.length > 0 && <p>Resistance: {pair(card.resistances)}</p>}
+          {card.retreat_cost.length > 0 && <p>Retreat cost: {card.retreat_cost.length}</p>}
 
           {card.flavor_text && <p className='muted'><i>{card.flavor_text}</i></p>}
-          {card.artist && <p className='muted'>Ilustrador: {card.artist}</p>}
+          {card.artist && <p className='muted'>Artist: {card.artist}</p>}
 
           {onChangeQty && (
             <div className='qty'>
               <button onClick={() => onChangeQty(card.id, qty - 1)}>-</button>
-              <b>{qty} en mi colección</b>
+              <b>{qty} in my collection</b>
               <button onClick={() => onChangeQty(card.id, qty + 1)}>+</button>
             </div>
           )}
           <p>
             {onToggleWish && (
               <button onClick={() => onToggleWish(card.id)}>
-                {wanted ? '★ En mi lista de deseos' : '☆ Agregar a deseos'}
+                {wanted ? '★ In my wishlist' : '☆ Add to wishlist'}
               </button>
             )}{' '}
-            <button onClick={onClose}>Cerrar</button>
+            <button onClick={onClose}>Close</button>
           </p>        
         </div>
       </div>

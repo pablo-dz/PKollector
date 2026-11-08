@@ -8,8 +8,8 @@ import SetView from './components/SetView';
 import './App.css';
 
 const TABS = [
-  ['catalog', 'Catálogo'], ['sets', 'Sets'], ['mine', 'Mi colección'],
-  ['dups', 'Repetidas'], ['wishlist', 'Deseos'], ['progress', 'Progreso'],
+  ['catalog', 'Catalog'], ['sets', 'Sets'], ['mine', 'My Collection'],
+  ['dups', 'Duplicates'], ['wishlist', 'Wishlist'], ['progress', 'Progress'],
 ];
 
 const idsToMap = (ids) => Object.fromEntries(ids.map((id) => [id, true]));
@@ -78,14 +78,14 @@ export default function App() {
         {tab === 'dups' && (
           <>
             <p className='muted'>
-              Tienes {dupCards} cartas con copias de sobra ({extraCopies} copias para intercambiar).
+              You have {dupCards} duplicate cards ({extraCopies} copies to trade).
             </p>
             <Catalog {...shared} fixed={{ duplicates: 'true' }} showExtras />
           </>
         )}
         {tab === 'wishlist' && (
           <>
-            <p className='muted'>{Object.keys(wishlist).length} cartas en tu lista de deseos.</p>
+            <p className='muted'>{Object.keys(wishlist).length} cards in your wishlist.</p>
             <Catalog {...shared} fixed={{ wanted: 'true' }} />
           </>
         )}
@@ -98,8 +98,8 @@ export default function App() {
       </main>
 
       <footer className='footer'>
-        PKollector es un proyecto fan sin fines de lucro, no afiliado a Nintendo, Creatures, GAME FREAK ni The
-        Pokémon Company. Pokémon y sus nombres son marcas de sus respectivos dueños.
+        PKollector is a fan project without profit motive, not affiliated with Nintendo, Creatures, GAME FREAK or The
+        Pokémon Company. Pokémon and its names are trademarks of their respective owners.
       </footer>
     </>
   );

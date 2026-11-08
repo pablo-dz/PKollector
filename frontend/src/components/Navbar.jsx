@@ -3,7 +3,7 @@ import logo from '../assets/logo_pkollector.png';
 export default function Navbar({ tabs, tab, onTab, children }) {
   return (
     <header className='navbar'>
-      <button className='nav-logo' onClick={() => onTab(tabs[0][0])} title='Ir al catálogo'>
+      <button className='nav-logo' onClick={() => onTab(tabs[0][0])} title='Go to catalog'>
         <img src={logo} alt='PKollector' />
       </button>
       <nav className='nav-tabs'>
