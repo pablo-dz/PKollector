@@ -48,7 +48,7 @@ export default function AccountBar() {
 
   return (
     <div className='account'>
-      <button className='nav-btn' onClick={() => setMode('login')}>Login</button>
+      <button className='nav-btn nav-login' onClick={() => setMode('login')}>Iniciar sesión</button>
       <button className='nav-btn' onClick={() => setMode('register')}>Create Account</button>
       {mode && (
         <div className='overlay' onClick={close}>
@@ -75,7 +75,7 @@ export default function AccountBar() {
               </p>
             )}
             {error && <p className='error'>{error}</p>}
-            <button type='submit' disabled={busy}>
+            <button type='submit' className={mode === 'login' ? 'btn-login' : ''} disabled={busy}>
               {busy ? 'Sending...' : mode === 'login' ? 'Login' : 'Create Account'}
             </button>
             <button type='button' onClick={close}>Cancel</button>
