@@ -5,6 +5,7 @@ import Catalog from './components/Catalog';
 import Navbar from './components/Navbar';
 import Progress from './components/Progress';
 import SetView from './components/SetView';
+import Footer from './components/Footer';
 import './App.css';
 import SetsBrowser from './components/SetsBrowser';
 
@@ -110,11 +111,7 @@ export default function App() {
           />
         )}
       </main>
-
-      <footer className='footer'>
-        PKollector is a fan project without profit motive, not affiliated with Nintendo, Creatures, GAME FREAK or The
-        Pokémon Company. Pokémon and its names are trademarks of their respective owners.
-      </footer>
+      <Footer />
     </>
   );
 }
