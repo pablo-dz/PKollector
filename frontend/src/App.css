@@ -145,3 +145,45 @@ button.active:hover:not(:disabled), .auth-box button[type='submit']:hover:not(:d
 .stat-line { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
 .stat { display: inline-flex; align-items: center; gap: 4px; }
 .modal .set-symbol { width: auto; height: 22px; max-width: 40px; align-self: center; }
+
+.sets-toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.sets-toolbar input { flex: 1; min-width: 220px; }
+
+
+.set-logo { height: 52px; width: 160px; object-fit: contain; object-position: left center; }
+.set-logo-text { display: flex; align-items: center; font-weight: 700; }
+.set-block-info { flex: 1; min-width: 200px; }
+.set-block-info h3 { margin: 0; }
+.set-block-info p { margin: 2px 0 6px; }
+.set-progress { display: flex; align-items: center; gap: 10px; max-width: 320px; }
+.set-progress .bar { flex: 1; margin-top: 0; }
+
+.set-block {
+  display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+  background: var(--surface); border: 2px solid transparent; border-radius: 12px;
+  padding: 14px 16px; margin-bottom: 16px; cursor: pointer;
+}
+.set-block:hover { border-color: #3b4cca; }
+.set-block-head { display: flex; align-items: center; gap: 16px; flex: 1 1 340px; flex-wrap: wrap; }
+
+.carousel { flex: 0 1 400px; min-width: 0; overflow: hidden; }
+.carousel-track {
+  display: flex; width: max-content;
+  animation: carousel-scroll var(--dur, 15s) linear infinite;
+  animation-play-state: paused;
+}
+.set-block:hover .carousel-track { animation-play-state: running; }
+.mini-card { flex: 0 0 auto; width: 104px; margin-right: 10px; }
+.mini-card img { width: 100%; aspect-ratio: 5 / 7; object-fit: contain; border-radius: 6px; background: var(--bg); display: block; }
+.mini-card .num { display: block; text-align: center; margin-top: 2px; }
+
+@keyframes carousel-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@media (max-width: 760px) { .carousel { flex-basis: 100%; } }
+@media (prefers-reduced-motion: reduce) {
+  .carousel { overflow-x: auto; }
+  .carousel-track { animation: none; }
+}

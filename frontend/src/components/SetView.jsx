@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import CardModal from './CardModal';
 
-const STATUS = [['all', 'All'], ['owned', 'Owned'], ['missing', 'Missing']];
+const STATUS = [['all', 'Todas'], ['owned', 'Las que tengo'], ['missing', 'Me faltan']];
 
-export default function SetView({ setId, onChangeSetId, owned, onChangeQty, wishlist = {}, onToggleWish }) 
-{  const [sets, setSets] = useState([]);
+export default function SetView({ setId, onBack, owned, onChangeQty, wishlist = {}, onToggleWish }) {
   const [info, setInfo] = useState(null);
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -14,11 +13,6 @@ export default function SetView({ setId, onChangeSetId, owned, onChangeQty, wish
   const [selected, setSelected] = useState(null);
 
   useEffect(() => {
-    api('/filters').then((f) => setSets(f.sets)).catch((e) => setError(e.message));
-  }, []);
-
-  useEffect(() => {
-    if (!setId) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -45,17 +39,10 @@ export default function SetView({ setId, onChangeSetId, owned, onChangeQty, wish
 
   return (
     <div>
-      <select
-        value={setId || ''}
-        onChange={(e) => { onChangeSetId(e.target.value); setStatus('all'); }}
-      >
-        <option value=''>Choose a set...</option>
-        {sets.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-      </select>
+      <button onClick={onBack}>← Todos los sets</button>
 
-      {!setId && <p className='muted'>Choose a set to view its checklist.</p>}
-      {error && <p className='error'>Could not load: {error}</p>}
-      {loading && <p className='muted'>Loading...</p>}
+      {error && <p className='error'>No se pudo cargar: {error}</p>}
+      {loading && <p className='muted'>Cargando...</p>}
 
       {info && (
         <>
@@ -69,7 +56,7 @@ export default function SetView({ setId, onChangeSetId, owned, onChangeQty, wish
             </div>
           </div>
 
-          <h3>I have {ownedCount} of {total} ({pct}%) · {total - ownedCount} missing</h3>
+          <h3>Tengo {ownedCount} de {total} ({pct}%) · faltan {total - ownedCount}</h3>
           <div className='bar'><div style={{ width: pct + '%' }} /></div>
 
           <div className='seg'>
@@ -84,10 +71,10 @@ export default function SetView({ setId, onChangeSetId, owned, onChangeQty, wish
             {visible.map((c) => (
               <div key={c.id} className={'tile' + (owned[c.id] ? ' owned' : ' missing')}>
                 <img src={c.image_small} alt={c.name} loading='lazy' onClick={() => setSelected(c)} />
-                                {onToggleWish && (
+                {onToggleWish && (
                   <button
                     className={'star' + (wishlist[c.id] ? ' on' : '')}
-                    title='Wishlist'
+                    title='Lista de deseos'
                     onClick={() => onToggleWish(c.id)}
                   >
                     {wishlist[c.id] ? '★' : '☆'}
@@ -104,7 +91,7 @@ export default function SetView({ setId, onChangeSetId, owned, onChangeQty, wish
               </div>
             ))}
           </div>
-          {visible.length === 0 && <p className='muted'>No cards in this view.</p>}
+          {visible.length === 0 && <p className='muted'>No hay cartas en esta vista.</p>}
         </>
       )}
 
@@ -113,9 +100,9 @@ export default function SetView({ setId, onChangeSetId, owned, onChangeQty, wish
           card={selected}
           qty={owned[selected.id] || 0}
           onChangeQty={onChangeQty}
-          onClose={() => setSelected(null)}
           wanted={!!wishlist[selected.id]}
           onToggleWish={onToggleWish}
+          onClose={() => setSelected(null)}
         />
       )}
     </div>

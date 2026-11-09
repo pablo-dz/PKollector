@@ -6,6 +6,7 @@ import Navbar from './components/Navbar';
 import Progress from './components/Progress';
 import SetView from './components/SetView';
 import './App.css';
+import SetsBrowser from './components/SetsBrowser';
 
 const TABS = [
   ['catalog', 'Catalog'], ['sets', 'Sets'], ['mine', 'My Collection'],
@@ -65,7 +66,14 @@ export default function App() {
 
   return (
     <>
-      <Navbar tabs={TABS} tab={tab} onTab={setTab}>
+      <Navbar
+        tabs={TABS}
+        tab={tab}
+        onTab={(id) => {
+          if (id === 'sets' && tab === 'sets') setSetId('');
+          setTab(id);
+        }}
+      >
         <AccountBar />
       </Navbar>
 
@@ -73,7 +81,13 @@ export default function App() {
         <h1 className='sr-only'>PKollector</h1>
 
         {tab === 'catalog' && <Catalog {...shared} />}
-        {tab === 'sets' && <SetView {...shared} setId={setId} onChangeSetId={setSetId} />}
+        {tab === 'sets' && (
+          setId ? (
+            <SetView {...shared} setId={setId} onBack={() => setSetId('')} />
+          ) : (
+            <SetsBrowser onOpenSet={setSetId} refreshKey={version} />
+          )
+        )}
         {tab === 'mine' && <Catalog {...shared} onlyOwned />}
         {tab === 'dups' && (
           <>
