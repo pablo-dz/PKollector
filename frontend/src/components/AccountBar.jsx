@@ -39,7 +39,7 @@ export default function AccountBar() {
     return (
       <div className='account'>
         <span className='nav-user'>Hello, {username}</span>
-        <button className='nav-btn' onClick={() => { logout(); window.location.reload(); }}>
+        <button className='nav-btn nav-logout' onClick={() => { logout(); window.location.reload(); }}>
           Logout
         </button>
       </div>

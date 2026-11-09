@@ -130,3 +130,18 @@ button.active:hover:not(:disabled), .auth-box button[type='submit']:hover:not(:d
 
 .qty button { background: #223052; border-color: var(--line); color: var(--text); }
 .qty button:hover:not(:disabled) { background: #2f3f6b; }
+.navbar .nav-btn.nav-logout { background: #b91c1c; border-color: #7f1d1d; }
+.navbar .nav-btn.nav-logout:hover { background: #dc2626; }
+
+.energy { display: inline-block; vertical-align: middle; }
+.energy-list { display: inline-flex; gap: 3px; vertical-align: middle; }
+.set-line { display: flex; align-items: center; gap: 8px; }
+.set-symbol { height: 22px; width: auto; max-width: 40px; object-fit: contain; }
+.type-line { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.attack { margin: 12px 0; }
+.attack-head { display: flex; align-items: center; gap: 8px; }
+.attack-head .dmg { margin-left: auto; font-weight: 700; }
+.attack p { margin: 4px 0 0; }
+.stat-line { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.stat { display: inline-flex; align-items: center; gap: 4px; }
+.modal .set-symbol { width: auto; height: 22px; max-width: 40px; align-self: center; }

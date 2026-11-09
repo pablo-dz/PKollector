@@ -74,7 +74,7 @@ def card_out(c: Card):
         'weaknesses': [{'type': w.type, 'value': w.value} for w in c.weaknesses],
         'resistances': [{'type': r.type, 'value': r.value} for r in c.resistances],
         'retreat_cost': c.retreat_cost, 'converted_retreat_cost': c.converted_retreat_cost,
-        'set_id': c.set_id, 'set_name': c.card_set.name,
+        'set_id': c.set_id, 'set_name': c.card_set.name, 'set_symbol': c.card_set.image_symbol,
         'number': c.number, 'artist': c.artist, 'rarity': c.rarity,
         'flavor_text': c.flavor_text,
         'national_pokedex_numbers': c.national_pokedex_numbers,
@@ -93,7 +93,7 @@ def card_summary(c: Card):
     return {
         'id': c.id, 'name': c.name, 'supertype': c.supertype, 'subtypes': c.subtypes,
         'types': c.types, 'hp': c.hp, 'rarity': c.rarity, 'number': c.number,
-        'set_id': c.set_id, 'set_name': c.card_set.name,
+        'set_id': c.set_id, 'set_name': c.card_set.name, 'set_symbol': c.card_set.image_symbol,
         'image_small': c.image_small, 'image_large': c.image_large,
     }
 
