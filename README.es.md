@@ -92,7 +92,7 @@ producción en el repositorio.
 | Frontend | React, Vite, JavaScript |
 | Backend | Python, FastAPI, SQLAlchemy |
 | Base de datos | PostgreSQL |
-| Datos de cartas | Pokémon TCG API |
+| Datos de cartas | [Pokémon TCG API v2](https://pokemontcg.io/) |
 
 ## 🗂️ Estructura del proyecto
 
@@ -356,9 +356,12 @@ npm run build
 
 ## 📦 Datos y atribución
 
-Los datos del catálogo se importan desde Pokémon TCG API. La disponibilidad de
-imágenes, precios y detalles depende de esa fuente externa. Los nombres,
-imágenes y marcas de Pokémon pertenecen a sus respectivos titulares.
+Los datos del catálogo se importan desde [Pokémon TCG API v2](https://pokemontcg.io/),
+usando el endpoint `https://api.pokemontcg.io/v2`. Los registros de sets y
+cartas, incluidas las URL de imágenes y los datos de precios de mercado,
+provienen de esta API; su disponibilidad y precisión dependen del servicio
+externo. Los nombres, imágenes y marcas de Pokémon pertenecen a sus respectivos
+titulares.
 
 ## 🔭 Lo que me gustaría agregar
 
@@ -368,9 +371,9 @@ explorar; irán tomando forma de a poco y según lo que resulte más útil.
 
 ### 🧭 Mantener el catálogo vivo
 
-El siguiente gran paso es dejar atrás la fuente de datos actual: está
-deprecada y sus claves existentes tienen vigencia hasta el **1 de marzo de
-2027**. La colección ya guardada debería seguir disponible, pero para mantener
+El siguiente gran paso es dejar atrás [Pokémon TCG API v2](https://pokemontcg.io/):
+está deprecada y sus claves existentes tienen vigencia hasta el **1 de marzo
+de 2027**. La colección ya guardada debería seguir disponible, pero para mantener
 el catálogo al día habrá que encontrar otra fuente —por ejemplo, Scrydex o
 TCGdex— y resolver cómo servir las imágenes a largo plazo. También quiero hacer
 más visibles los precios que ya se almacenan y automatizar las actualizaciones
