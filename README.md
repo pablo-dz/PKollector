@@ -29,19 +29,19 @@
 
 ## 👋 Why I built PKollector
 
-Hi! I collect Pokémon cards, and I've lost track more than once of what I
-already owned and what I was still looking for. Between different sets,
-binders, and duplicates, my notes and lists ended up scattered everywhere.
+I collect Pokémon cards and wanted a simple way to keep track of them. With
+cards from so many sets and plenty of duplicates, it can be hard to remember
+what I own and what I'm still looking for. I built PKollector to keep it all in
+one place.
 
-So I built PKollector: one place to check your collection, keep track of how
-many copies you have, and find out what's still missing. Spend less time trying
-to remember and more time enjoying the hobby. If it helps you too, I'd love to
-hear about it!
+The idea is simple: check your collection, record how many copies you have, and
+see which cards are still missing. That makes it easier to stay organized and
+enjoy the hobby. I hope you find it useful too.
 
 ## ✨ What can you do with PKollector?
 
-- **Find cards without digging through binders:** search by name and sort
-  results by name, release date, HP, or card number.
+- **Search and sort cards:** find cards by name and organize results by name,
+  release date, HP, or card number.
 - **Narrow down your search:** filter by series, set, energy type, category,
   subtype, rarity, HP range, or collection status.
 - **Check card details:** view attacks and energy costs, abilities, weaknesses,
@@ -315,10 +315,11 @@ erDiagram
     USERS ||..o{ WISHLIST : identified_by
 ```
 
-The dotted relationships between `USERS` and the collection tables represent
-logical associations: currently, `collection.user_id` and `wishlist.user_id`
-do not have foreign key constraints referencing `users.id`. Cards and
-showcase sets do have foreign keys to their respective catalog tables.
+The dotted lines show how users are associated with their collection and
+wishlist. In the database, `collection.user_id` and `wishlist.user_id` store a
+user ID, but they are not foreign keys referencing `users.id`. Cards and
+showcase entries, on the other hand, are linked to their respective tables
+through foreign keys.
 
 ## 🔌 API
 
@@ -377,10 +378,10 @@ they don't depend on running scripts by hand.
 
 ### 🗃️ Capturing more about each card
 
-Right now, a card is tracked by quantity, but a physical collection has more
-details that matter: whether it's holo or reverse, its language, and its
-condition. Recording those details would make each entry more accurate and help
-make collection value estimates more meaningful. CSV import and export would
+For now, the collection only records how many copies of each card you own.
+Eventually, I'd like to track each card's variant — such as holo or reverse —
+language, and condition too. That would make collection entries more precise
+and help produce more meaningful value estimates. CSV import and export would
 also make it easier to back up a collection or move it between tools.
 
 Another way to explore a collection would be by Pokémon — for example, seeing

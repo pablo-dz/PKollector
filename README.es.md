@@ -29,20 +29,19 @@
 
 ## 👋 ¿Por qué hice PKollector?
 
-¡Hola! Colecciono cartas Pokémon y, como quizá te ha pasado, más de una vez
-perdí la cuenta de lo que ya tenía y de lo que todavía estaba buscando. Entre
-distintos sets, carpetas y cartas repetidas, las notas y listas terminaban
-desperdigadas.
+Colecciono cartas Pokémon y quería una forma sencilla de llevar el registro.
+Con cartas de tantos sets y copias repetidas, a veces cuesta recordar qué tengo
+y qué sigo buscando. Terminé creando PKollector para tener esa información en
+un solo lugar.
 
-Por eso armé PKollector: un lugar para revisar la colección, anotar cuántas
-copias tienes y descubrir qué te falta. Así puedes pasar menos tiempo tratando
-de acordarte y más tiempo disfrutando el hobby. Si a ti también te sirve, ¡me
-encantará saberlo!
+La idea es simple: consultar la colección, registrar cuántas copias tienes y
+ver qué cartas te faltan. Así es más fácil organizarse y disfrutar del hobby.
+Ojalá también te sea útil.
 
 ## ✨ ¿Qué puedes hacer en PKollector?
 
-- **Encontrar una carta sin revolver las carpetas:** busca por nombre y ordena
-  los resultados por nombre, fecha, HP o número de carta.
+- **Buscar y ordenar cartas:** encuentra cartas por nombre y organiza los
+  resultados por nombre, fecha, HP o número de carta.
 - **Afilar la búsqueda:** filtra por serie, set, tipo de energía, categoría,
   subtipo, rareza, rango de HP o si la carta ya está en tu colección.
 - **Revisar cada detalle:** abre una carta para consultar sus ataques, costes de
@@ -317,11 +316,11 @@ erDiagram
     USERS ||..o{ WISHLIST : identified_by
 ```
 
-Las relaciones punteadas entre `USERS` y las tablas de colección representan
-una asociación lógica: actualmente, `collection.user_id` y `wishlist.user_id`
-no tienen una restricción de clave foránea hacia `users.id`. Las cartas y los
-sets destacados sí tienen claves foráneas hacia sus respectivas tablas de
-catálogo.
+Las líneas punteadas muestran cómo se asocian los usuarios con su colección y
+lista de deseos. En la base de datos, `collection.user_id` y `wishlist.user_id`
+guardan el identificador del usuario, pero no tienen una clave foránea que los
+vincule con `users.id`. En cambio, las cartas y los sets destacados sí están
+vinculados mediante claves foráneas a sus tablas correspondientes.
 
 ## 🔌 API
 
@@ -381,12 +380,13 @@ actualizaciones del catálogo y de las cartas destacadas.
 
 ### 🗃️ Registrar una colección con más detalle
 
-Hoy una carta se registra por cantidad, pero en la carpeta física importa mucho
-más: si es holo o reverse, en qué idioma está y en qué estado se conserva.
-Guardar esos datos permitiría describir mejor cada pieza y estimar con más
-sentido el valor de la colección. Para que sea sencillo empezar o cambiar de
-herramienta, también sería útil poder importar y exportar la colección como
-CSV.
+Por ahora, la colección solo registra cuántas copias tienes de cada carta. Más
+adelante, me gustaría poder anotar también su variante —por ejemplo, holo o
+reverse—, su idioma y su estado de conservación. Con esos datos, cada carta
+quedaría mejor identificada y sería posible estimar el valor de la colección
+con mayor precisión. También sería práctico importar y exportar la colección
+en CSV para hacer copias de seguridad o trasladarla desde y hacia otras
+herramientas.
 
 Otra forma de explorarla sería agrupar cartas por Pokémon —por ejemplo, ver de
 un vistazo todos los Pikachu— o presentar cada set como las páginas 3 × 3 de un
