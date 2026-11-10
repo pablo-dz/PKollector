@@ -1,3 +1,5 @@
+"""SQLAlchemy ORM models for cards, sets, accounts, and collection data."""
+
 from datetime import date, datetime
 
 from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
@@ -6,10 +8,14 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class Base(DeclarativeBase):
+    """Declarative base shared by all ORM models."""
+
     pass
 
 
 class CardSet(Base):
+    """A Pokémon TCG expansion and its release metadata."""
+
     __tablename__ = 'sets'
     id: Mapped[str] = mapped_column(String, primary_key=True)
     name: Mapped[str] = mapped_column(String)
@@ -27,6 +33,8 @@ class CardSet(Base):
 
 
 class Card(Base):
+    """A Pokémon TCG card and its related gameplay details."""
+
     __tablename__ = 'cards'
     id: Mapped[str] = mapped_column(String, primary_key=True)
     name: Mapped[str] = mapped_column(String, index=True)
@@ -73,6 +81,8 @@ class Card(Base):
 
 
 class CardAbility(Base):
+    """An ability belonging to a card, stored in source order."""
+
     __tablename__ = 'card_abilities'
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     card_id: Mapped[str] = mapped_column(ForeignKey('cards.id', ondelete='CASCADE'), index=True)
@@ -83,6 +93,8 @@ class CardAbility(Base):
 
 
 class CardAttack(Base):
+    """An attack belonging to a card, stored in source order."""
+
     __tablename__ = 'card_attacks'
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     card_id: Mapped[str] = mapped_column(ForeignKey('cards.id', ondelete='CASCADE'), index=True)
@@ -95,6 +107,8 @@ class CardAttack(Base):
 
 
 class CardWeakness(Base):
+    """A weakness type and multiplier or modifier for a card."""
+
     __tablename__ = 'card_weaknesses'
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     card_id: Mapped[str] = mapped_column(ForeignKey('cards.id', ondelete='CASCADE'), index=True)
@@ -104,6 +118,8 @@ class CardWeakness(Base):
 
 
 class CardResistance(Base):
+    """A resistance type and modifier for a card."""
+
     __tablename__ = 'card_resistances'
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     card_id: Mapped[str] = mapped_column(ForeignKey('cards.id', ondelete='CASCADE'), index=True)
@@ -113,6 +129,8 @@ class CardResistance(Base):
 
 
 class CollectionItem(Base):
+    """The quantity of a specific card owned by a user."""
+
     __tablename__ = 'collection'
     __table_args__ = (UniqueConstraint('user_id', 'card_id'),)
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -121,6 +139,8 @@ class CollectionItem(Base):
     quantity: Mapped[int] = mapped_column(Integer, default=1)
     
 class WishlistItem(Base):
+    """A card that a user wants to add to their collection."""
+
     __tablename__ = 'wishlist'
     __table_args__ = (UniqueConstraint('user_id', 'card_id'),)
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -128,6 +148,8 @@ class WishlistItem(Base):
     card_id: Mapped[str] = mapped_column(ForeignKey('cards.id'), index=True)
     
 class User(Base):
+    """An account with a unique username and securely hashed password."""
+
     __tablename__ = 'users'
     id: Mapped[str] = mapped_column(String, primary_key=True)
     username: Mapped[str] = mapped_column(String, unique=True, index=True)
@@ -135,6 +157,8 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     
 class SetShowcase(Base):
+    """A card selected for a set preview, with its display position."""
+
     __tablename__ = 'set_showcase'
     __table_args__ = (UniqueConstraint('set_id', 'card_id'),)
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)

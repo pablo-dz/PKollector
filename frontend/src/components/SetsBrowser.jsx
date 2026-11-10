@@ -5,22 +5,22 @@ const PAGE = 20;
 const MIN_HALF = 5;
 const SECONDS_PER_CARD = 2.5;
 const SORTS = [
-  ['newest', 'Más nuevos primero'],
-  ['oldest', 'Más antiguos primero'],
-  ['name_asc', 'Nombre (A-Z)'],
-  ['name_desc', 'Nombre (Z-A)'],
-  ['cards_desc', 'Más cartas primero'],
-  ['cards_asc', 'Menos cartas primero'],
-  ['progress_desc', 'Más completos primero'],
-  ['progress_asc', 'Menos completos primero'],
+  ['newest', 'Newest First'],
+  ['oldest', 'Oldest First'],
+  ['name_asc', 'Name (A-Z)'],
+  ['name_desc', 'Name (Z-A)'],
+  ['cards_desc', 'Most Cards'],
+  ['cards_asc', 'Fewest Cards'],
+  ['progress_desc', 'Most Complete'],
+  ['progress_asc', 'Least Complete'],
 ];
 
 const plain = (t) => (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-const byName = (a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base', numeric: true });
+const byName = (a, b) => a.name.localeCompare(b.name, 'en', { sensitivity: 'base', numeric: true });
 const fmtDate = (iso) =>
-  iso ? new Date(iso + 'T00:00:00').toLocaleDateString('es-CL', { year: 'numeric', month: 'short' }) : '';
+  iso ? new Date(iso + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'short' }) : '';
 
-// Duplica las cartas para que el carrusel cierre el bucle sin saltos
+// Repeat cards so the carousel can loop without visible jumps.
 function withLoop(s) {
   if (s.cards.length === 0) return { ...s, loop: [], duration: 0 };
   const copies = Math.ceil(MIN_HALF / s.cards.length);
@@ -28,7 +28,7 @@ function withLoop(s) {
   return { ...s, loop: [...half, ...half], duration: half.length * SECONDS_PER_CARD };
 }
 
-// La lista se guarda para no pedirla de nuevo cada vez que vuelves a la pestaña
+// Cache the set list so it does not need to be fetched every time the tab is reopened.
 let setsCache = null;
 
 export default function SetsBrowser({ onOpenSet, refreshKey }) {
@@ -88,7 +88,7 @@ export default function SetsBrowser({ onOpenSet, refreshKey }) {
             <div className='toolbar'>
         <input
           className='search'
-          placeholder='Buscar set o serie...'
+          placeholder='Search sets or series...'
           value={query}
           onChange={(e) => { setQuery(e.target.value); setShown(PAGE); }}
         />
@@ -96,14 +96,14 @@ export default function SetsBrowser({ onOpenSet, refreshKey }) {
           className='select sort'
           value={sort}
           onChange={(e) => { setSort(e.target.value); setShown(PAGE); }}
-          title='Ordenar por'
+          title='Sort by'
         >
           {SORTS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
         </select>
       </div>
 
-      {error && <p className='error'>No se pudo cargar: {error}</p>}
-      {loading && <p className='muted'>Cargando sets...</p>}
+      {error && <p className='error'>Could not load: {error}</p>}
+      {loading && <p className='muted'>Loading sets...</p>}
       {!loading && !error && <p className='count'>{list.length} sets</p>}
 
       {visible.map((s) => {
@@ -122,14 +122,14 @@ export default function SetsBrowser({ onOpenSet, refreshKey }) {
               <div className='set-block-info'>
                 <h3>{s.name}</h3>
                 <p className='muted'>
-                  {s.series}{s.release_date && ' · ' + fmtDate(s.release_date)} · {s.count} cartas
+                  {s.series}{s.release_date && ' · ' + fmtDate(s.release_date)} · {s.count} cards
                 </p>
                 <div className='set-progress'>
                   <div className='bar'><div style={{ width: percent + '%' }} /></div>
                   <span className='muted'>{have}/{total}</span>
                 </div>
               </div>
-              <button onClick={(e) => { e.stopPropagation(); onOpenSet(s.id); }}>Ver set completo →</button>
+              <button onClick={(e) => { e.stopPropagation(); onOpenSet(s.id); }}>View Full Set →</button>
             </div>
 
             {s.loop.length > 0 && (
@@ -148,12 +148,12 @@ export default function SetsBrowser({ onOpenSet, refreshKey }) {
         );
       })}
 
-      {!loading && !error && list.length === 0 && <p className='muted'>No hay sets con esa búsqueda.</p>}
+      {!loading && !error && list.length === 0 && <p className='muted'>No sets match this search.</p>}
 
       {list.length > shown && (
         <div className='pager'>
           <button onClick={() => setShown(shown + PAGE)}>
-            Mostrar más sets ({list.length - shown} restantes)
+            Show more sets ({list.length - shown} remaining)
           </button>
         </div>
       )}

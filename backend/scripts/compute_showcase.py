@@ -1,3 +1,5 @@
+"""Select and persist representative preview cards for each set."""
+
 import math
 from collections import defaultdict
 
@@ -24,7 +26,7 @@ TIERS = {
 }
 RARITY_RANK = {name: tier for tier, names in TIERS.items() for name in names}
 
-# Pokémon icónicos, por número de la Pokédex nacional (puedes agregar o quitar)
+# Iconic Pokémon by National Pokédex number; adjust this set to tune previews.
 ICONIC = {
     1, 3, 4, 6, 7, 9, 25, 94, 130, 131, 133, 134, 135, 136, 143, 144, 145, 146, 149, 150, 151,
     196, 197, 249, 250, 282, 384, 445, 448, 483, 484, 487, 493, 658, 700, 778, 791, 792,
@@ -33,6 +35,14 @@ ICONIC = {
 
 
 def unit_price(prices):
+    """Return the lowest positive market price found in a price mapping.
+
+    Args:
+        prices: Mapping of market variants to their price data, or ``None``.
+
+    Returns:
+        The lowest positive market price, or ``None`` when no price is available.
+    """
     if not prices:
         return None
     values = [
@@ -43,6 +53,17 @@ def unit_price(prices):
 
 
 def score(card):
+    """Calculate a showcase ranking score for a card.
+
+    The score combines rarity, market value, Pokédex prominence, and card
+    category to prioritize visually or culturally notable cards.
+
+    Args:
+        card: Card-like row containing rarity, prices, Pokédex numbers, and type.
+
+    Returns:
+        A numeric score; higher values rank ahead of lower values.
+    """
     tier = RARITY_RANK.get(card.rarity, 2 if card.rarity else 1)
     total = tier * 100
     price = unit_price(card.tcgplayer_prices)
@@ -55,6 +76,7 @@ def score(card):
 
 
 def main():
+    """Rank cards in each set and replace the persisted showcase selection."""
     with SessionLocal() as db:
         rows = db.execute(
             select(Card.id, Card.name, Card.set_id, Card.supertype, Card.rarity,
@@ -96,7 +118,7 @@ def main():
         db.execute(insert(SetShowcase), out)
         db.commit()
 
-        print(len(picks), 'sets,', len(out), 'cartas insignia')
+        print(len(picks), 'sets,', len(out), 'showcase cards')
         for set_id in SAMPLE:
             if set_id in picks:
                 print(set_id, '->', [r.name for r in picks[set_id]])

@@ -24,8 +24,8 @@ export default function Footer() {
         </a>
       </div>
       <p>
-        PKollector es un proyecto fan sin fines de lucro, no afiliado a Nintendo, Creatures, GAME FREAK ni The
-        Pokémon Company. Pokémon y sus nombres son marcas de sus respectivos dueños.
+        PKollector is a non-profit fan project and is not affiliated with Nintendo, Creatures, GAME FREAK, or The
+        Pokémon Company. Pokémon and its names are trademarks of their respective owners.
       </p>
     </footer>
   );

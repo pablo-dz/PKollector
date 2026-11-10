@@ -1,4 +1,6 @@
 
+"""Download Pokémon TCG API data and persist sets and cards to PostgreSQL."""
+
 import os
 import sys
 import time
@@ -19,9 +21,22 @@ HEADERS = {'X-Api-Key': key} if key else {}
 PAGE_SIZE = 250
 
 
-# ---------- Acceso a la API ----------
+# ---------- API access ----------
 
 def get(path, params=None, tries=100):
+    """Fetch and decode an API response, retrying transient failures.
+
+    Args:
+        path: API path appended to the base URL.
+        params: Optional query parameters.
+        tries: Maximum number of request attempts.
+
+    Returns:
+        The decoded JSON response.
+
+    Raises:
+        RuntimeError: If every request attempt fails.
+    """
     for i in range(tries):
         try:
             r = requests.get(
@@ -35,13 +50,23 @@ def get(path, params=None, tries=100):
 
         except (requests.RequestException, ValueError) as e:
             wait = 1 ** i
-            print('Error:', e, '| reintento en', wait, 's')
+            print('Request error:', e, '| retrying in', wait, 's')
             time.sleep(wait)
 
-    raise RuntimeError('La API no respondió tras varios intentos')
+    raise RuntimeError('The API did not respond after multiple attempts')
 
 
 def pages(path, start_page=1, end_page=None):
+    """Yield API result pages until the result set or requested range ends.
+
+    Args:
+        path: API path to paginate.
+        start_page: One-based page from which to begin.
+        end_page: Optional inclusive last page.
+
+    Yields:
+        Tuples of page number, cumulative item count, total item count, and items.
+    """
     page = start_page
     seen = 0
 
@@ -61,7 +86,7 @@ def pages(path, start_page=1, end_page=None):
         page += 1
 
 
-# ---------- Conversión: objeto de la API -> fila de la base ----------
+# ---------- API object-to-database row conversion ----------
 
 DATE_FORMATS = (
     '%Y/%m/%d %H:%M:%S',
@@ -72,6 +97,14 @@ DATE_FORMATS = (
 
 
 def parse_dt(value):
+    """Parse supported API date formats into a naive ``datetime`` value.
+
+    Args:
+        value: Date or datetime text returned by the API, or a falsey value.
+
+    Returns:
+        The parsed datetime, or ``None`` if the input is empty or unrecognized.
+    """
     if not value:
         return None
 
@@ -89,24 +122,57 @@ def parse_dt(value):
         ).replace(tzinfo=None)
 
     except ValueError:
-        print('Fecha no reconocida, se guarda vacía:', repr(value))
+        print('Unrecognized date; storing an empty value:', repr(value))
         return None
 
 
 def to_datetime(value):
+    """Convert an API date value to a datetime for database storage.
+
+    Args:
+        value: Date or datetime text returned by the API.
+
+    Returns:
+        The parsed datetime, or ``None`` when the value is unavailable.
+    """
     return parse_dt(value)
 
 
 def to_date(value):
+    """Convert an API date value to a date for database storage.
+
+    Args:
+        value: Date or datetime text returned by the API.
+
+    Returns:
+        The parsed date, or ``None`` when the value is unavailable.
+    """
     d = parse_dt(value)
     return d.date() if d else None
 
 
 def legal(obj, fmt):
+    """Read one card or set legality from the API payload.
+
+    Args:
+        obj: API object containing an optional ``legalities`` mapping.
+        fmt: Legality format name, such as ``standard``.
+
+    Returns:
+        The legality status, or ``None`` if it is absent.
+    """
     return (obj.get('legalities') or {}).get(fmt)
 
 
 def set_row(s):
+    """Convert a Pokémon TCG API set payload into database column values.
+
+    Args:
+        s: Set object from the API.
+
+    Returns:
+        A dictionary keyed by ``CardSet`` column names.
+    """
     imgs = s.get('images') or {}
 
     return dict(
@@ -127,6 +193,14 @@ def set_row(s):
 
 
 def card_row(c):
+    """Convert a Pokémon TCG API card payload into database column values.
+
+    Args:
+        c: Card object from the API.
+
+    Returns:
+        A dictionary keyed by ``Card`` column names.
+    """
     imgs = c.get('images') or {}
     trait = c.get('ancientTrait') or {}
     tcg = c.get('tcgplayer') or {}
@@ -169,6 +243,14 @@ def card_row(c):
 
 
 def child_rows(cards):
+    """Extract ordered ability, attack, weakness, and resistance rows.
+
+    Args:
+        cards: Iterable of card payloads from the API.
+
+    Returns:
+        Four row lists in model order: abilities, attacks, weaknesses, resistances.
+    """
     abilities, attacks, weaknesses, resistances = [], [], [], []
 
     for c in cards:
@@ -213,9 +295,16 @@ def child_rows(cards):
     return abilities, attacks, weaknesses, resistances
 
 
-# ---------- Guardado en la base ----------
+# ---------- Database persistence ----------
 
 def upsert(session, model, rows):
+    """Insert rows or update existing rows by their primary key.
+
+    Args:
+        session: Active SQLAlchemy session.
+        model: ORM model class receiving the rows.
+        rows: Mappings of model column names to values.
+    """
     if not rows:
         return
 
@@ -235,6 +324,12 @@ def upsert(session, model, rows):
 
 
 def save_cards(session, cards):
+    """Persist cards and replace their ordered related gameplay records.
+
+    Args:
+        session: Active SQLAlchemy session.
+        cards: Card payloads from one API page.
+    """
     ids = [c['id'] for c in cards]
 
     upsert(session, Card, [card_row(c) for c in cards])
@@ -258,24 +353,33 @@ def save_cards(session, cards):
     session.commit()
 
 
-# ---------- Ejecución principal ----------
+# ---------- Command-line entry point ----------
 
 def main():
+    """Download sets and a selected card-page range into the database.
+
+    The first optional command-line argument is the first page to download;
+    the second is the inclusive final page.
+
+    Raises:
+        ValueError: If the requested page range is invalid.
+        RuntimeError: If the upstream API remains unavailable after retries.
+    """
     start_page = int(sys.argv[1]) if len(sys.argv) > 1 else 1
     end_page = int(sys.argv[2]) if len(sys.argv) > 2 else None
 
     if start_page < 1 or (end_page is not None and end_page < start_page):
-        raise ValueError('Rango de páginas inválido')
+        raise ValueError('Invalid page range')
 
     with SessionLocal() as session:
 
-        # Descargar sets
+        # Download sets.
         for page, seen, total, items in pages('/sets'):
             upsert(session, CardSet, [set_row(s) for s in items])
             session.commit()
-            print('Sets:', seen, 'de', total)
+            print('Sets:', seen, 'of', total)
 
-        # Descargar cartas desde la página indicada
+        # Download cards starting at the requested page.
         for page, seen, total, items in pages(
             '/cards',
             start_page=start_page,
@@ -283,15 +387,15 @@ def main():
         ):
             save_cards(session, items)
             print(
-                'Cartas, página', page,
-                '-', seen, 'descargadas de', total
+                'Cards, page', page,
+                '-', seen, 'downloaded of', total
             )
 
         n_cards = session.scalar(
             select(func.count()).select_from(Card)
         )
 
-        print('Listo. Cartas en la base:', n_cards)
+        print('Done. Cards in the database:', n_cards)
 
 
 if __name__ == '__main__':

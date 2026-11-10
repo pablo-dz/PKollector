@@ -1,3 +1,5 @@
+"""FastAPI application and endpoints for card catalog and collection features."""
+
 import os
 import time
 
@@ -23,24 +25,33 @@ app.add_middleware(
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.include_router(accounts_router)
 
-# Los 11 tipos que devuelve GET /v2/types de la API
+# The 11 energy types returned by the Pokémon TCG API.
 TYPES = ['Colorless', 'Darkness', 'Dragon', 'Fairy', 'Fighting', 'Fire',
          'Grass', 'Lightning', 'Metal', 'Psychic', 'Water']
 
 
 def get_db():
+    """Yield a database session and close it after the request completes."""
     with SessionLocal() as db:
         yield db
 
 
 def iso(d):
+    """Serialize a date or datetime to ISO 8601, preserving ``None`` values.
+
+    Args:
+        d: A date, datetime, or ``None`` value.
+
+    Returns:
+        The ISO 8601 string representation, or ``None``.
+    """
     return d.isoformat() if d else None
 
 
-# Orden natural del número de carta: primero el prefijo de letras, luego el valor numérico
+# Sort card numbers naturally: alphabetic prefix first, then numeric value.
 NUM_PREFIX = func.regexp_replace(Card.number, '[0-9].*$', '')
 NUM_VALUE = cast(func.nullif(func.regexp_replace(Card.number, '[^0-9]', '', 'g'), ''), BigInteger)
-# HP como número (en la base es texto)
+# HP is stored as text, so cast its numeric portion for comparisons and sorting.
 HP_VALUE = cast(func.nullif(func.regexp_replace(Card.hp, '[^0-9]', '', 'g'), ''), Integer)
 
 ORDERS = {
@@ -56,6 +67,14 @@ ORDERS = {
 
 
 def card_out(c: Card):
+    """Serialize a card and its related gameplay, set, and market data.
+
+    Args:
+        c: Card ORM instance with its relationships loaded.
+
+    Returns:
+        A JSON-compatible dictionary containing the full card representation.
+    """
     return {
         'id': c.id, 'name': c.name, 'supertype': c.supertype, 'subtypes': c.subtypes,
         'level': c.level, 'hp': c.hp, 'types': c.types,
@@ -89,6 +108,14 @@ def card_out(c: Card):
 
 
 def card_summary(c: Card):
+    """Serialize the fields needed to render a card in catalog results.
+
+    Args:
+        c: Card ORM instance with its set relationship loaded.
+
+    Returns:
+        A compact, JSON-compatible card dictionary.
+    """
     return {
         'id': c.id, 'name': c.name, 'supertype': c.supertype, 'subtypes': c.subtypes,
         'types': c.types, 'hp': c.hp, 'rarity': c.rarity, 'number': c.number,
@@ -108,16 +135,29 @@ LOAD_ALL = (
 
 @app.get('/health')
 def health():
+    """Report that the API process is responsive.
+
+    Returns:
+        A dictionary with ``ok`` set to ``True``.
+    """
     return {'ok': True}
 
 
-# Las opciones de los filtros casi no cambian: se recuerdan 10 minutos
+# Filter options rarely change, so cache them for ten minutes.
 FILTERS_TTL = 600
 _filters_cache = {'at': 0.0, 'data': None}
 
 
 @app.get('/filters')
 def filters(db: Session = Depends(get_db)):
+    """Return distinct catalog values used to populate frontend filters.
+
+    Args:
+        db: Database session provided by FastAPI.
+
+    Returns:
+        Available sets, series, rarities, supertypes, subtypes, and energy types.
+    """
     now = time.time()
     if _filters_cache['data'] and now - _filters_cache['at'] < FILTERS_TTL:
         return _filters_cache['data']
@@ -154,11 +194,22 @@ def filters(db: Session = Depends(get_db)):
 
 
 @app.get('/sets/{set_id}')
-
 def get_set(set_id: str, db: Session = Depends(get_db)):
+    """Return metadata for a single set.
+
+    Args:
+        set_id: Pokémon TCG API identifier for the set.
+        db: Database session provided by FastAPI.
+
+    Returns:
+        Set metadata, including release date and image URLs.
+
+    Raises:
+        HTTPException: If the requested set does not exist.
+    """
     s = db.get(CardSet, set_id)
     if not s:
-        raise HTTPException(404, 'Set no encontrado')
+        raise HTTPException(404, 'Set not found')
     return {
         'id': s.id, 'name': s.name, 'series': s.series,
         'printed_total': s.printed_total, 'total': s.total,
@@ -171,6 +222,14 @@ _sets_cache = {'at': 0.0, 'data': None}
 
 @app.get('/sets')
 def list_sets(db: Session = Depends(get_db)):
+    """List sets with card counts and curated preview cards.
+
+    Args:
+        db: Database session provided by FastAPI.
+
+    Returns:
+        Set records with metadata, card counts, and showcase previews.
+    """
     now = time.time()
     if _sets_cache['data'] and now - _sets_cache['at'] < FILTERS_TTL:
         return _sets_cache['data']
@@ -223,6 +282,30 @@ def list_cards(
     x_user_id: str | None = Header(None),
     db: Session = Depends(get_db),
 ):
+    """Search, filter, sort, and paginate the card catalog.
+
+    Args:
+        q: Optional case-insensitive card-name query.
+        set_id: Optional set identifier filter.
+        series: Optional series name filter.
+        type: Optional energy type filter.
+        subtype: Optional card subtype filter.
+        rarity: Optional rarity filter.
+        supertype: Optional card category filter.
+        hp_min: Optional minimum HP value.
+        hp_max: Optional maximum HP value.
+        owned: When provided with a user ID, filter by collection ownership.
+        wanted: When true, limit results to the user's wishlist.
+        duplicates: When true, limit results to cards owned in multiple copies.
+        sort: Sort key; unknown values fall back to name order.
+        page: One-based page number.
+        page_size: Number of results per page, capped at 1,000.
+        x_user_id: Optional ID used to apply user-specific filters.
+        db: Database session provided by FastAPI.
+
+    Returns:
+        A dictionary containing the total match count, page number, and card summaries.
+    """
     stmt = select(Card).join(Card.card_set)
     if q:
         stmt = stmt.where(Card.name.ilike('%' + q + '%'))
@@ -268,28 +351,64 @@ def list_cards(
 
 @app.get('/cards/{card_id}')
 def get_card(card_id: str, db: Session = Depends(get_db)):
+    """Return the full details for one card.
+
+    Args:
+        card_id: Pokémon TCG API identifier for the card.
+        db: Database session provided by FastAPI.
+
+    Returns:
+        The full serialized card record.
+
+    Raises:
+        HTTPException: If the requested card does not exist.
+    """
     c = db.scalar(select(Card).options(*LOAD_ALL).where(Card.id == card_id))
     if not c:
-        raise HTTPException(404, 'Carta no encontrada')
+        raise HTTPException(404, 'Card not found')
     return card_out(c)
 
 
 class QtyBody(BaseModel):
+    """Request payload for setting a card's collection quantity."""
+
     quantity: int
 
 
 class WantBody(BaseModel):
+    """Request payload for adding or removing a card from a wishlist."""
+
     wanted: bool
 
 
 def need_user(x_user_id: str | None = Header(None)):
+    """Require the client identifier used to scope collection data.
+
+    Args:
+        x_user_id: Value of the ``X-User-Id`` request header.
+
+    Returns:
+        The supplied user identifier.
+
+    Raises:
+        HTTPException: If the request does not include the required header.
+    """
     if not x_user_id:
-        raise HTTPException(400, 'Falta el header X-User-Id')
+        raise HTTPException(400, 'Missing X-User-Id header')
     return x_user_id
 
 
 @app.get('/collection')
 def my_collection(user_id: str = Depends(need_user), db: Session = Depends(get_db)):
+    """Return the current user's card quantities.
+
+    Args:
+        user_id: Required client identifier from the request header.
+        db: Database session provided by FastAPI.
+
+    Returns:
+        A mapping of card IDs to owned quantities.
+    """
     rows = db.execute(
         select(CollectionItem.card_id, CollectionItem.quantity)
         .where(CollectionItem.user_id == user_id)
@@ -300,8 +419,24 @@ def my_collection(user_id: str = Depends(need_user), db: Session = Depends(get_d
 @app.put('/collection/{card_id}')
 def set_quantity(card_id: str, body: QtyBody,
                  user_id: str = Depends(need_user), db: Session = Depends(get_db)):
+    """Create, update, or remove a card quantity in the user's collection.
+
+    A quantity less than or equal to zero removes the card from the collection.
+
+    Args:
+        card_id: Pokémon TCG API identifier for the card.
+        body: Requested collection quantity.
+        user_id: Required client identifier from the request header.
+        db: Database session provided by FastAPI.
+
+    Returns:
+        The card ID and non-negative quantity after the update.
+
+    Raises:
+        HTTPException: If the requested card does not exist.
+    """
     if not db.get(Card, card_id):
-        raise HTTPException(404, 'Carta no encontrada')
+        raise HTTPException(404, 'Card not found')
     item = db.scalar(
         select(CollectionItem).where(
             CollectionItem.user_id == user_id, CollectionItem.card_id == card_id)
@@ -319,6 +454,15 @@ def set_quantity(card_id: str, body: QtyBody,
 
 @app.get('/wishlist')
 def my_wishlist(user_id: str = Depends(need_user), db: Session = Depends(get_db)):
+    """Return the card IDs in the current user's wishlist.
+
+    Args:
+        user_id: Required client identifier from the request header.
+        db: Database session provided by FastAPI.
+
+    Returns:
+        A list of card IDs.
+    """
     return db.scalars(
         select(WishlistItem.card_id).where(WishlistItem.user_id == user_id)
     ).all()
@@ -327,8 +471,22 @@ def my_wishlist(user_id: str = Depends(need_user), db: Session = Depends(get_db)
 @app.put('/wishlist/{card_id}')
 def set_wanted(card_id: str, body: WantBody,
                user_id: str = Depends(need_user), db: Session = Depends(get_db)):
+    """Add or remove a card from the current user's wishlist.
+
+    Args:
+        card_id: Pokémon TCG API identifier for the card.
+        body: Whether the card should be on the wishlist.
+        user_id: Required client identifier from the request header.
+        db: Database session provided by FastAPI.
+
+    Returns:
+        The card ID and its requested wishlist state.
+
+    Raises:
+        HTTPException: If the requested card does not exist.
+    """
     if not db.get(Card, card_id):
-        raise HTTPException(404, 'Carta no encontrada')
+        raise HTTPException(404, 'Card not found')
     item = db.scalar(
         select(WishlistItem).where(
             WishlistItem.user_id == user_id, WishlistItem.card_id == card_id)
@@ -343,6 +501,15 @@ def set_wanted(card_id: str, body: WantBody,
 
 @app.get('/progress')
 def progress(user_id: str = Depends(need_user), db: Session = Depends(get_db)):
+    """Summarize owned card counts per set for the current user.
+
+    Args:
+        user_id: Required client identifier from the request header.
+        db: Database session provided by FastAPI.
+
+    Returns:
+        Overall totals and per-set owned and total card counts.
+    """
     stmt = (
         select(
             CardSet.id, CardSet.name, CardSet.series,

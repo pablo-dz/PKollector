@@ -9,15 +9,15 @@ const EMPTY = {
   hp_min: '', hp_max: '', owned: '', sort: 'name',
 };
 const SORTS = [
-  ['name', 'Nombre (A-Z)'],
-  ['newest', 'Más nuevas primero'],
-  ['oldest', 'Más antiguas primero'],
-  ['hp_desc', 'HP de mayor a menor'],
-  ['hp_asc', 'HP de menor a mayor'],
-  ['number', 'Número de carta'],
+  ['name', 'Name (A-Z)'],
+  ['newest', 'Newest First'],
+  ['oldest', 'Oldest First'],
+  ['hp_desc', 'Highest HP First'],
+  ['hp_asc', 'Lowest HP First'],
+  ['number', 'Card Number'],
 ];
-const OWNED = [['', 'Todas'], ['true', 'Las que tengo'], ['false', 'Me faltan']];
-const OWNED_LABEL = { true: 'Solo las que tengo', false: 'Solo las que me faltan' };
+const OWNED = [['', 'All Cards'], ['true', 'Owned'], ['false', 'Missing']];
+const OWNED_LABEL = { true: 'Owned only', false: 'Missing only' };
 
 function useDebounce(value, ms = 350) {
   const [v, setV] = useState(value);
@@ -96,12 +96,12 @@ export default function Catalog({
   const setName = options.sets.find((s) => s.id === filters.set_id)?.name;
 
   const chips = [];
-  if (filters.series) chips.push({ key: 'series', label: 'Serie: ' + filters.series, patch: { series: '' } });
+  if (filters.series) chips.push({ key: 'series', label: 'Series: ' + filters.series, patch: { series: '' } });
   if (filters.set_id) chips.push({ key: 'set', label: 'Set: ' + (setName || filters.set_id), patch: { set_id: '' } });
-  if (filters.supertype) chips.push({ key: 'supertype', label: 'Categoría: ' + filters.supertype, patch: { supertype: '' } });
-  if (filters.subtype) chips.push({ key: 'subtype', label: 'Subtipo: ' + filters.subtype, patch: { subtype: '' } });
-  if (filters.type) chips.push({ key: 'type', label: 'Tipo: ' + filters.type, icon: filters.type, patch: { type: '' } });
-  if (filters.rarity) chips.push({ key: 'rarity', label: 'Rareza: ' + filters.rarity, patch: { rarity: '' } });
+  if (filters.supertype) chips.push({ key: 'supertype', label: 'Category: ' + filters.supertype, patch: { supertype: '' } });
+  if (filters.subtype) chips.push({ key: 'subtype', label: 'Subtype: ' + filters.subtype, patch: { subtype: '' } });
+  if (filters.type) chips.push({ key: 'type', label: 'Type: ' + filters.type, icon: filters.type, patch: { type: '' } });
+  if (filters.rarity) chips.push({ key: 'rarity', label: 'Rarity: ' + filters.rarity, patch: { rarity: '' } });
   if (filters.hp_min || filters.hp_max) {
     chips.push({
       key: 'hp',
@@ -116,12 +116,12 @@ export default function Catalog({
   return (
     <div>
       <div className='toolbar'>
-        <input className='search' placeholder='Buscar por nombre...' value={filters.q} onChange={update('q')} />
-        <select className='select sort' value={filters.sort} onChange={update('sort')} title='Ordenar por'>
+        <input className='search' placeholder='Search by name...' value={filters.q} onChange={update('q')} />
+        <select className='select sort' value={filters.sort} onChange={update('sort')} title='Sort by'>
           {SORTS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
         </select>
         <button className='filters-toggle' aria-expanded={open} onClick={() => setOpen(!open)}>
-          Filtros
+          Filters
           {chips.length > 0 && <span className='badge'>{chips.length}</span>}
         </button>
       </div>
@@ -129,19 +129,19 @@ export default function Catalog({
       {chips.length > 0 && (
         <div className='chips'>
           {chips.map((c) => (
-            <button key={c.key} className='chip' title='Quitar filtro' onClick={() => change(c.patch)}>
+            <button key={c.key} className='chip' title='Remove filter' onClick={() => change(c.patch)}>
               {c.icon && <EnergyIcon type={c.icon} size={16} />}
               {c.label}
               <span className='x'>✕</span>
             </button>
           ))}
-          <button className='link' onClick={clearChips}>Limpiar todo</button>
+          <button className='link' onClick={clearChips}>Clear all</button>
         </div>
       )}
 
       {open && (
         <div className='panel'>
-          <Field label='Tipo'>
+          <Field label='Type'>
             <div className={'types' + (filters.type ? ' has-active' : '')}>
               {options.types.map((t) => (
                 <button
@@ -158,53 +158,53 @@ export default function Catalog({
           </Field>
 
           <div className='panel-grid'>
-            <Field label='Serie'>
+            <Field label='Series'>
               <select
-                className='select' aria-label='Serie' value={filters.series}
+                className='select' aria-label='Series' value={filters.series}
                 onChange={(e) => change({ series: e.target.value, set_id: '' })}
               >
-                <option value=''>Todas</option>
+                <option value=''>All Series</option>
                 {options.series.map((s) => <option key={s}>{s}</option>)}
               </select>
             </Field>
             <Field label='Set'>
               <select className='select' aria-label='Set' value={filters.set_id} onChange={update('set_id')}>
-                <option value=''>Todos</option>
+                <option value=''>All Sets</option>
                 {setsShown.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </Field>
-            <Field label='Categoría'>
-              <select className='select' aria-label='Categoría' value={filters.supertype} onChange={update('supertype')}>
-                <option value=''>Todas</option>
+            <Field label='Category'>
+              <select className='select' aria-label='Category' value={filters.supertype} onChange={update('supertype')}>
+                <option value=''>All Categories</option>
                 {options.supertypes.map((s) => <option key={s}>{s}</option>)}
               </select>
             </Field>
-            <Field label='Subtipo'>
-              <select className='select' aria-label='Subtipo' value={filters.subtype} onChange={update('subtype')}>
-                <option value=''>Todos</option>
+            <Field label='Subtype'>
+              <select className='select' aria-label='Subtype' value={filters.subtype} onChange={update('subtype')}>
+                <option value=''>All Subtypes</option>
                 {options.subtypes.map((s) => <option key={s}>{s}</option>)}
               </select>
             </Field>
-            <Field label='Rareza'>
-              <select className='select' aria-label='Rareza' value={filters.rarity} onChange={update('rarity')}>
-                <option value=''>Todas</option>
+            <Field label='Rarity'>
+              <select className='select' aria-label='Rarity' value={filters.rarity} onChange={update('rarity')}>
+                <option value=''>All Rarities</option>
                 {options.rarities.map((r) => <option key={r}>{r}</option>)}
               </select>
             </Field>
             <Field label='HP'>
               <div className='range'>
                 <input
-                  type='number' min='0' placeholder='Mín' aria-label='HP mínimo'
+                  type='number' min='0' placeholder='Min' aria-label='Minimum HP'
                   value={filters.hp_min} onChange={update('hp_min')}
                 />
                 <input
-                  type='number' min='0' placeholder='Máx' aria-label='HP máximo'
+                  type='number' min='0' placeholder='Max' aria-label='Maximum HP'
                   value={filters.hp_max} onChange={update('hp_max')}
                 />
               </div>
             </Field>
             {onChangeQty && !onlyOwned && (
-              <Field label='Estado'>
+              <Field label='Collection Status'>
                 <div className='seg'>
                   {OWNED.map(([value, label]) => (
                     <button
@@ -223,9 +223,9 @@ export default function Catalog({
       )}
 
       {error ? (
-        <p className='error'>No se pudo cargar: {error}</p>
+        <p className='error'>Could not load: {error}</p>
       ) : (
-        <p className='count'>{loading ? 'Cargando...' : data.total + ' cartas'}</p>
+        <p className='count'>{loading ? 'Loading...' : data.total + ' cards'}</p>
       )}
 
       <div className='grid'>
@@ -235,7 +235,7 @@ export default function Catalog({
             {onToggleWish && (
               <button
                 className={'star' + (wishlist[c.id] ? ' on' : '')}
-                title='Lista de deseos'
+                title='Wishlist'
                 onClick={() => onToggleWish(c.id)}
               >
                 {wishlist[c.id] ? '★' : '☆'}
@@ -251,17 +251,17 @@ export default function Catalog({
                 </div>
               )}
             </div>
-            {showExtras && owned[c.id] > 1 && <div className='num'>Te sobran {owned[c.id] - 1}</div>}
+            {showExtras && owned[c.id] > 1 && <div className='num'>{owned[c.id] - 1} extra copies</div>}
           </div>
         ))}
       </div>
 
-      {!loading && !error && data.items.length === 0 && <p className='muted'>No hay cartas con esos filtros.</p>}
+      {!loading && !error && data.items.length === 0 && <p className='muted'>No cards match these filters.</p>}
 
       <div className='pager'>
-        <button disabled={page <= 1} onClick={() => setPage(page - 1)}>Anterior</button>
-        <span>Página {page} de {pages}</span>
-        <button disabled={page >= pages} onClick={() => setPage(page + 1)}>Siguiente</button>
+        <button disabled={page <= 1} onClick={() => setPage(page - 1)}>Previous</button>
+        <span>Page {page} of {pages}</span>
+        <button disabled={page >= pages} onClick={() => setPage(page + 1)}>Next</button>
       </div>
 
       {selected && (

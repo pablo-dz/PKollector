@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import CardModal from './CardModal';
 
-const STATUS = [['all', 'Todas'], ['owned', 'Las que tengo'], ['missing', 'Me faltan']];
+const STATUS = [['all', 'All'], ['owned', 'Owned'], ['missing', 'Missing']];
 
 export default function SetView({ setId, onBack, owned, onChangeQty, wishlist = {}, onToggleWish }) {
   const [info, setInfo] = useState(null);
@@ -39,10 +39,10 @@ export default function SetView({ setId, onBack, owned, onChangeQty, wishlist = 
 
   return (
     <div>
-      <button onClick={onBack}>← Todos los sets</button>
+      <button onClick={onBack}>← All Sets</button>
 
-      {error && <p className='error'>No se pudo cargar: {error}</p>}
-      {loading && <p className='muted'>Cargando...</p>}
+      {error && <p className='error'>Could not load: {error}</p>}
+      {loading && <p className='muted'>Loading...</p>}
 
       {info && (
         <>
@@ -56,7 +56,7 @@ export default function SetView({ setId, onBack, owned, onChangeQty, wishlist = 
             </div>
           </div>
 
-          <h3>Tengo {ownedCount} de {total} ({pct}%) · faltan {total - ownedCount}</h3>
+          <h3>I have {ownedCount} of {total} ({pct}%) · {total - ownedCount} missing</h3>
           <div className='bar'><div style={{ width: pct + '%' }} /></div>
 
           <div className='seg'>
@@ -74,7 +74,7 @@ export default function SetView({ setId, onBack, owned, onChangeQty, wishlist = 
                 {onToggleWish && (
                   <button
                     className={'star' + (wishlist[c.id] ? ' on' : '')}
-                    title='Lista de deseos'
+                    title='Wishlist'
                     onClick={() => onToggleWish(c.id)}
                   >
                     {wishlist[c.id] ? '★' : '☆'}
@@ -91,7 +91,7 @@ export default function SetView({ setId, onBack, owned, onChangeQty, wishlist = 
               </div>
             ))}
           </div>
-          {visible.length === 0 && <p className='muted'>No hay cartas en esta vista.</p>}
+          {visible.length === 0 && <p className='muted'>No cards in this view.</p>}
         </>
       )}
 
