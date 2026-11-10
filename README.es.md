@@ -92,7 +92,7 @@ producción en el repositorio.
 | Frontend | React, Vite, JavaScript |
 | Backend | Python, FastAPI, SQLAlchemy |
 | Base de datos | PostgreSQL |
-| Datos de cartas | [Pokémon TCG API v2](https://pokemontcg.io/) |
+| Datos de cartas | [Pokémon TCG API](https://docs.pokemontcg.io/) (deprecada) |
 
 ## 🗂️ Estructura del proyecto
 
@@ -356,12 +356,11 @@ npm run build
 
 ## 📦 Datos y atribución
 
-Los datos del catálogo se importan desde [Pokémon TCG API v2](https://pokemontcg.io/),
-usando el endpoint `https://api.pokemontcg.io/v2`. Los registros de sets y
-cartas, incluidas las URL de imágenes y los datos de precios de mercado,
-provienen de esta API; su disponibilidad y precisión dependen del servicio
-externo. Los nombres, imágenes y marcas de Pokémon pertenecen a sus respectivos
-titulares.
+Los datos del catálogo se importaron desde [Pokémon TCG API](https://docs.pokemontcg.io/),
+que actualmente está deprecada. Los registros de sets y cartas, incluidas las
+URL de imágenes y los datos de precios de mercado, se obtuvieron mediante esa
+API; la disponibilidad y precisión de los datos externos dependen del servicio.
+Los nombres, imágenes y marcas de Pokémon pertenecen a sus respectivos titulares.
 
 ## 🔭 Lo que me gustaría agregar
 
@@ -371,14 +370,14 @@ explorar; irán tomando forma de a poco y según lo que resulte más útil.
 
 ### 🧭 Mantener el catálogo vivo
 
-El siguiente gran paso es dejar atrás [Pokémon TCG API v2](https://pokemontcg.io/):
-está deprecada y sus claves existentes tienen vigencia hasta el **1 de marzo
-de 2027**. La colección ya guardada debería seguir disponible, pero para mantener
-el catálogo al día habrá que encontrar otra fuente —por ejemplo, Scrydex o
-TCGdex— y resolver cómo servir las imágenes a largo plazo. También quiero hacer
-más visibles los precios que ya se almacenan y automatizar las actualizaciones
-del catálogo y de las cartas destacadas, para que no dependan de ejecutar tareas
-manualmente.
+El siguiente gran paso es dejar atrás [Pokémon TCG API](https://docs.pokemontcg.io/),
+la fuente deprecada con la que se importó el catálogo actual. Se espera que las
+claves existentes sigan funcionando hasta el **1 de marzo de 2027**. La
+colección ya guardada debería seguir disponible, pero para agregar sets y
+actualizar los datos externos habrá que encontrar otra fuente —por ejemplo,
+Scrydex o TCGdex— y resolver cómo servir las imágenes a largo plazo. También
+quiero aprovechar mejor los precios que ya se almacenan y automatizar las
+actualizaciones del catálogo y de las cartas destacadas.
 
 ### 🗃️ Registrar una colección con más detalle
 

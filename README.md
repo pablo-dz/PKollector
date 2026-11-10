@@ -91,7 +91,7 @@ frontend domain. Never commit production credentials to the repository.
 | Frontend | React, Vite, JavaScript |
 | Backend | Python, FastAPI, SQLAlchemy |
 | Database | PostgreSQL |
-| Card data | [Pokémon TCG API v2](https://pokemontcg.io/) |
+| Card data | [Pokémon TCG API](https://docs.pokemontcg.io/) (deprecated) |
 
 ## 🗂️ Project structure
 
@@ -352,11 +352,11 @@ npm run build
 
 ## 📦 Data and attribution
 
-Catalog data is imported from the [Pokémon TCG API v2](https://pokemontcg.io/),
-using its `https://api.pokemontcg.io/v2` endpoint. Set and card records,
-including image URLs and market price data, come from this API; their
-availability and accuracy depend on the upstream service. Pokémon names,
-images, and trademarks belong to their respective owners.
+Catalog data was imported from the [Pokémon TCG API](https://docs.pokemontcg.io/),
+which is now deprecated. Set and card records, including image URLs and market
+price data, were obtained through that API; the availability and accuracy of
+upstream data depend on the service. Pokémon names, images, and trademarks
+belong to their respective owners.
 
 ## 🔭 What I'd like to build next
 
@@ -366,13 +366,14 @@ over time, guided by what turns out to be most useful.
 
 ### 🧭 Keeping the catalog alive
 
-The next major step is moving away from the [Pokémon TCG API v2](https://pokemontcg.io/):
-it has been deprecated, and existing API keys are set to remain active until
-**March 1, 2027**. The collection already stored in the database should remain available,
-but keeping the catalog up to date will require a replacement — perhaps
-Scrydex or TCGdex — and a long-term plan for serving images. I'd also like to
-make the price data already being stored more useful and automate catalog and
-featured-card updates, so they don't depend on running scripts by hand.
+The next major step is moving away from the [Pokémon TCG API](https://docs.pokemontcg.io/),
+the deprecated source used to import the current catalog. Existing API keys are
+expected to remain active until **March 1, 2027**. The collection already in
+the database should remain available, but adding new sets and refreshing
+upstream data will require a replacement — perhaps Scrydex or TCGdex — and a
+long-term plan for serving images. I'd also like to make the price data already
+being stored more useful and automate catalog and featured-card updates, so
+they don't depend on running scripts by hand.
 
 ### 🗃️ Capturing more about each card
 
