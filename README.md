@@ -398,25 +398,6 @@ price. That could lead to collection statistics by type, rarity, or era;
 progress by series; and a way to estimate which set is closest to completion
 and what it might cost. Price alerts for wishlist cards would be useful, too.
 
-### 🛠️ Making the app more reliable and comfortable
-
-If the community grows, accounts will need stronger protections and more
-control: limiting sign-in attempts, expiring sessions, and allowing password
-recovery or account deletion. There is no email-based password recovery yet,
-and account identifiers currently do not expire. I also want to improve image
-loading so browsing large catalogs feels faster.
-
-And further down the road, there are ideas that could change how the app is
-used: identifying cards with a camera, building decks from cards you own,
-coordinating trades between collectors, or importing a collection from another
-platform.
-
-## 🤝 Project status and contributions
-
-PKollector is still growing, so suggestions and contributions are very
-welcome. For larger changes, please open a discussion or issue first so we can
-agree on the scope.
-
 ## 📄 License
 
 There is currently no license file in this repository. Until one is added, do
