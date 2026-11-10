@@ -10,7 +10,7 @@
 
 @font-face {
   font-family: 'PokemonSolid';
-  src: url('./assets/fonts/PokemonSolid.ttf') format('truetype');
+  src: url('./assets/fonts/pokemonsolid.ttf') format('truetype');
   font-display: swap;
 }
 
