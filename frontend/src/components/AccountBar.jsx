@@ -49,7 +49,7 @@ export default function AccountBar() {
   return (
     <div className='account'>
       <button className='nav-btn nav-login' onClick={() => setMode('login')}>Iniciar sesión</button>
-      <button className='nav-btn' onClick={() => setMode('register')}>Create Account</button>
+      <button className='nav-btn nav-register' onClick={() => setMode('register')}>Create Account</button>
       {mode && (
         <div className='overlay' onClick={close}>
           <form className='auth-box' onClick={(e) => e.stopPropagation()} onSubmit={submit}>
