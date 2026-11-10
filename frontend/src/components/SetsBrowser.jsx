@@ -85,13 +85,19 @@ export default function SetsBrowser({ onOpenSet, refreshKey }) {
 
   return (
     <div>
-      <div className='sets-toolbar'>
+            <div className='toolbar'>
         <input
+          className='search'
           placeholder='Buscar set o serie...'
           value={query}
           onChange={(e) => { setQuery(e.target.value); setShown(PAGE); }}
         />
-        <select value={sort} onChange={(e) => { setSort(e.target.value); setShown(PAGE); }} title='Ordenar por'>
+        <select
+          className='select sort'
+          value={sort}
+          onChange={(e) => { setSort(e.target.value); setShown(PAGE); }}
+          title='Ordenar por'
+        >
           {SORTS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
         </select>
       </div>
