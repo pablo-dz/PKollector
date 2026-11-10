@@ -133,3 +133,11 @@ class User(Base):
     username: Mapped[str] = mapped_column(String, unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    
+class SetShowcase(Base):
+    __tablename__ = 'set_showcase'
+    __table_args__ = (UniqueConstraint('set_id', 'card_id'),)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    set_id: Mapped[str] = mapped_column(ForeignKey('sets.id'), index=True)
+    card_id: Mapped[str] = mapped_column(ForeignKey('cards.id'))
+    position: Mapped[int] = mapped_column(Integer)

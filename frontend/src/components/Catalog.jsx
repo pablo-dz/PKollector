@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import CardModal from './CardModal';
+import { EnergyIcon } from './EnergyIcon';
 
 const PAGE_SIZE = 40;
 const EMPTY = {
@@ -15,6 +16,8 @@ const SORTS = [
   ['hp_asc', 'HP de menor a mayor'],
   ['number', 'Número de carta'],
 ];
+const OWNED = [['', 'Todas'], ['true', 'Las que tengo'], ['false', 'Me faltan']];
+const OWNED_LABEL = { true: 'Solo las que tengo', false: 'Solo las que me faltan' };
 
 function useDebounce(value, ms = 350) {
   const [v, setV] = useState(value);
@@ -23,6 +26,15 @@ function useDebounce(value, ms = 350) {
     return () => clearTimeout(t);
   }, [value, ms]);
   return v;
+}
+
+function Field({ label, children }) {
+  return (
+    <div className='field'>
+      <span className='field-title'>{label}</span>
+      {children}
+    </div>
+  );
 }
 
 export default function Catalog({
@@ -38,6 +50,7 @@ export default function Catalog({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selected, setSelected] = useState(null);
+  const [open, setOpen] = useState(false);
 
   const q = useDebounce(filters.q);
   const hpMin = useDebounce(filters.hp_min);
@@ -67,74 +80,147 @@ export default function Catalog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, queryKey]);
 
-  const update = (key) => (e) => {
-    setFilters((f) => ({ ...f, [key]: e.target.value }));
+  const change = (patch) => {
+    setFilters((f) => ({ ...f, ...patch }));
     setPage(1);
   };
-  // Al cambiar de serie, el set elegido se limpia (puede no pertenecer a esa serie)
-  const updateSeries = (e) => {
-    setFilters((f) => ({ ...f, series: e.target.value, set_id: '' }));
-    setPage(1);
-  };
-  const clear = () => {
-    setFilters(EMPTY);
+  const update = (key) => (e) => change({ [key]: e.target.value });
+  const clearChips = () => {
+    setFilters((f) => ({ ...EMPTY, q: f.q, sort: f.sort }));
     setPage(1);
   };
 
   const setsShown = filters.series
     ? options.sets.filter((s) => s.series === filters.series)
     : options.sets;
-  const hasFilters = JSON.stringify(filters) !== JSON.stringify(EMPTY);
+  const setName = options.sets.find((s) => s.id === filters.set_id)?.name;
+
+  const chips = [];
+  if (filters.series) chips.push({ key: 'series', label: 'Serie: ' + filters.series, patch: { series: '' } });
+  if (filters.set_id) chips.push({ key: 'set', label: 'Set: ' + (setName || filters.set_id), patch: { set_id: '' } });
+  if (filters.supertype) chips.push({ key: 'supertype', label: 'Categoría: ' + filters.supertype, patch: { supertype: '' } });
+  if (filters.subtype) chips.push({ key: 'subtype', label: 'Subtipo: ' + filters.subtype, patch: { subtype: '' } });
+  if (filters.type) chips.push({ key: 'type', label: 'Tipo: ' + filters.type, icon: filters.type, patch: { type: '' } });
+  if (filters.rarity) chips.push({ key: 'rarity', label: 'Rareza: ' + filters.rarity, patch: { rarity: '' } });
+  if (filters.hp_min || filters.hp_max) {
+    chips.push({
+      key: 'hp',
+      label: 'HP ' + (filters.hp_min || '0') + '–' + (filters.hp_max || '∞'),
+      patch: { hp_min: '', hp_max: '' },
+    });
+  }
+  if (filters.owned && !onlyOwned) chips.push({ key: 'owned', label: OWNED_LABEL[filters.owned], patch: { owned: '' } });
+
   const pages = Math.max(1, Math.ceil(data.total / PAGE_SIZE));
 
   return (
     <div>
-      <div className='filters'>
-        <input placeholder='Buscar por nombre...' value={filters.q} onChange={update('q')} />
-        <select value={filters.series} onChange={updateSeries}>
-          <option value=''>Todas las series</option>
-          {options.series.map((s) => <option key={s}>{s}</option>)}
-        </select>
-        <select value={filters.set_id} onChange={update('set_id')}>
-          <option value=''>Todos los sets</option>
-          {setsShown.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
-        <select value={filters.supertype} onChange={update('supertype')}>
-          <option value=''>Todas las categorías</option>
-          {options.supertypes.map((s) => <option key={s}>{s}</option>)}
-        </select>
-        <select value={filters.subtype} onChange={update('subtype')}>
-          <option value=''>Todos los subtipos</option>
-          {options.subtypes.map((s) => <option key={s}>{s}</option>)}
-        </select>
-        <select value={filters.type} onChange={update('type')}>
-          <option value=''>Todos los tipos</option>
-          {options.types.map((t) => <option key={t}>{t}</option>)}
-        </select>
-        <select value={filters.rarity} onChange={update('rarity')}>
-          <option value=''>Todas las rarezas</option>
-          {options.rarities.map((r) => <option key={r}>{r}</option>)}
-        </select>
-        <input
-          className='small-input' type='number' min='0' placeholder='HP mín'
-          value={filters.hp_min} onChange={update('hp_min')}
-        />
-        <input
-          className='small-input' type='number' min='0' placeholder='HP máx'
-          value={filters.hp_max} onChange={update('hp_max')}
-        />
-        {onChangeQty && !onlyOwned && (
-          <select value={filters.owned} onChange={update('owned')}>
-            <option value=''>Tengo y me faltan</option>
-            <option value='true'>Solo las que tengo</option>
-            <option value='false'>Solo las que me faltan</option>
-          </select>
-        )}
-        <select value={filters.sort} onChange={update('sort')} title='Ordenar por'>
+      <div className='toolbar'>
+        <input className='search' placeholder='Buscar por nombre...' value={filters.q} onChange={update('q')} />
+        <select className='select sort' value={filters.sort} onChange={update('sort')} title='Ordenar por'>
           {SORTS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
         </select>
-        {hasFilters && <button onClick={clear}>Limpiar filtros</button>}
+        <button className='filters-toggle' aria-expanded={open} onClick={() => setOpen(!open)}>
+          Filtros
+          {chips.length > 0 && <span className='badge'>{chips.length}</span>}
+        </button>
       </div>
+
+      {chips.length > 0 && (
+        <div className='chips'>
+          {chips.map((c) => (
+            <button key={c.key} className='chip' title='Quitar filtro' onClick={() => change(c.patch)}>
+              {c.icon && <EnergyIcon type={c.icon} size={16} />}
+              {c.label}
+              <span className='x'>✕</span>
+            </button>
+          ))}
+          <button className='link' onClick={clearChips}>Limpiar todo</button>
+        </div>
+      )}
+
+      {open && (
+        <div className='panel'>
+          <Field label='Tipo'>
+            <div className={'types' + (filters.type ? ' has-active' : '')}>
+              {options.types.map((t) => (
+                <button
+                  key={t}
+                  className={'type-btn' + (filters.type === t ? ' on' : '')}
+                  title={t}
+                  aria-pressed={filters.type === t}
+                  onClick={() => change({ type: filters.type === t ? '' : t })}
+                >
+                  <EnergyIcon type={t} size={28} />
+                </button>
+              ))}
+            </div>
+          </Field>
+
+          <div className='panel-grid'>
+            <Field label='Serie'>
+              <select
+                className='select' aria-label='Serie' value={filters.series}
+                onChange={(e) => change({ series: e.target.value, set_id: '' })}
+              >
+                <option value=''>Todas</option>
+                {options.series.map((s) => <option key={s}>{s}</option>)}
+              </select>
+            </Field>
+            <Field label='Set'>
+              <select className='select' aria-label='Set' value={filters.set_id} onChange={update('set_id')}>
+                <option value=''>Todos</option>
+                {setsShown.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </Field>
+            <Field label='Categoría'>
+              <select className='select' aria-label='Categoría' value={filters.supertype} onChange={update('supertype')}>
+                <option value=''>Todas</option>
+                {options.supertypes.map((s) => <option key={s}>{s}</option>)}
+              </select>
+            </Field>
+            <Field label='Subtipo'>
+              <select className='select' aria-label='Subtipo' value={filters.subtype} onChange={update('subtype')}>
+                <option value=''>Todos</option>
+                {options.subtypes.map((s) => <option key={s}>{s}</option>)}
+              </select>
+            </Field>
+            <Field label='Rareza'>
+              <select className='select' aria-label='Rareza' value={filters.rarity} onChange={update('rarity')}>
+                <option value=''>Todas</option>
+                {options.rarities.map((r) => <option key={r}>{r}</option>)}
+              </select>
+            </Field>
+            <Field label='HP'>
+              <div className='range'>
+                <input
+                  type='number' min='0' placeholder='Mín' aria-label='HP mínimo'
+                  value={filters.hp_min} onChange={update('hp_min')}
+                />
+                <input
+                  type='number' min='0' placeholder='Máx' aria-label='HP máximo'
+                  value={filters.hp_max} onChange={update('hp_max')}
+                />
+              </div>
+            </Field>
+            {onChangeQty && !onlyOwned && (
+              <Field label='Estado'>
+                <div className='seg'>
+                  {OWNED.map(([value, label]) => (
+                    <button
+                      key={value}
+                      className={filters.owned === value ? 'active' : ''}
+                      onClick={() => change({ owned: value })}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+            )}
+          </div>
+        </div>
+      )}
 
       {error ? (
         <p className='error'>No se pudo cargar: {error}</p>

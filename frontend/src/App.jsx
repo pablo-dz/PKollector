@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
 import { api } from './api';
+import AccountBar from './components/AccountBar';
 import Catalog from './components/Catalog';
+import Navbar from './components/Navbar';
 import Progress from './components/Progress';
 import SetView from './components/SetView';
+import Footer from './components/Footer';
 import './App.css';
-import AccountBar from './components/AccountBar';
+import SetsBrowser from './components/SetsBrowser';
 
 const TABS = [
-  ['catalog', 'Catálogo'], ['sets', 'Sets'], ['mine', 'Mi colección'],
-  ['dups', 'Repetidas'], ['wishlist', 'Deseos'], ['progress', 'Progreso'],
+  ['catalog', 'Catalog'], ['sets', 'Sets'], ['mine', 'My Collection'],
+  ['dups', 'Duplicates'], ['wishlist', 'Wishlist'], ['progress', 'Progress'],
 ];
 
 const idsToMap = (ids) => Object.fromEntries(ids.map((id) => [id, true]));
@@ -63,42 +66,52 @@ export default function App() {
   const shared = { owned, onChangeQty: changeQty, wishlist, onToggleWish: toggleWish };
 
   return (
-    <div className='app'>
-      <div className='topbar'>
-        <h1>PKollector</h1>
+    <>
+      <Navbar
+        tabs={TABS}
+        tab={tab}
+        onTab={(id) => {
+          if (id === 'sets' && tab === 'sets') setSetId('');
+          setTab(id);
+        }}
+      >
         <AccountBar />
-      </div>
-      <div className='tabs'>
-        {TABS.map(([id, label]) => (
-          <button key={id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}>
-            {label}
-          </button>
-        ))}
-      </div>
+      </Navbar>
 
-      {tab === 'catalog' && <Catalog {...shared} />}
-      {tab === 'sets' && <SetView {...shared} setId={setId} onChangeSetId={setSetId} />}
-      {tab === 'mine' && <Catalog {...shared} onlyOwned />}
-      {tab === 'dups' && (
-        <>
-          <p className='muted'>
-            Tienes {dupCards} cartas con copias de sobra ({extraCopies} copias para intercambiar).
-          </p>
-          <Catalog {...shared} fixed={{ duplicates: 'true' }} showExtras />
-        </>
-      )}
-      {tab === 'wishlist' && (
-        <>
-          <p className='muted'>{Object.keys(wishlist).length} cartas en tu lista de deseos.</p>
-          <Catalog {...shared} fixed={{ wanted: 'true' }} />
-        </>
-      )}
-      {tab === 'progress' && (
-        <Progress
-          refreshKey={version}
-          onOpenSet={(id) => { setSetId(id); setTab('sets'); }}
-        />
-      )}
-    </div>
+      <main className='app'>
+        <h1 className='sr-only'>PKollector</h1>
+
+        {tab === 'catalog' && <Catalog {...shared} />}
+        {tab === 'sets' && (
+          setId ? (
+            <SetView {...shared} setId={setId} onBack={() => setSetId('')} />
+          ) : (
+            <SetsBrowser onOpenSet={setSetId} refreshKey={version} />
+          )
+        )}
+        {tab === 'mine' && <Catalog {...shared} onlyOwned />}
+        {tab === 'dups' && (
+          <>
+            <p className='muted'>
+              You have {dupCards} duplicate cards ({extraCopies} copies to trade).
+            </p>
+            <Catalog {...shared} fixed={{ duplicates: 'true' }} showExtras />
+          </>
+        )}
+        {tab === 'wishlist' && (
+          <>
+            <p className='muted'>{Object.keys(wishlist).length} cards in your wishlist.</p>
+            <Catalog {...shared} fixed={{ wanted: 'true' }} />
+          </>
+        )}
+        {tab === 'progress' && (
+          <Progress
+            refreshKey={version}
+            onOpenSet={(id) => { setSetId(id); setTab('sets'); }}
+          />
+        )}
+      </main>
+      <Footer />
+    </>
   );
 }

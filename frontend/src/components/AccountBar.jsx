@@ -14,11 +14,11 @@ export default function AccountBar() {
     e.preventDefault();
     const name = form.username.trim().toLowerCase();
     if (!/^[a-z0-9_]{3,30}$/.test(name)) {
-      setError('El usuario debe tener de 3 a 30 caracteres: letras, números o guion bajo.');
+      setError('The username must be 3 to 30 characters long and may contain only letters, numbers, and underscores.');
       return;
     }
     if (mode === 'register' && form.password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres.');
+      setError('The password must be at least 6 characters long.');
       return;
     }
     setBusy(true);
@@ -38,45 +38,47 @@ export default function AccountBar() {
   if (username) {
     return (
       <div className='account'>
-        Hola, <b>{username}</b>{' '}
-        <button onClick={() => { logout(); window.location.reload(); }}>Cerrar sesión</button>
+        <span className='nav-user'>Hello, {username}</span>
+        <button className='nav-btn nav-logout' onClick={() => { logout(); window.location.reload(); }}>
+          Logout
+        </button>
       </div>
     );
   }
 
   return (
     <div className='account'>
-      <button onClick={() => setMode('login')}>Iniciar sesión</button>{' '}
-      <button onClick={() => setMode('register')}>Crear cuenta</button>
+      <button className='nav-btn nav-login' onClick={() => setMode('login')}>Iniciar sesión</button>
+      <button className='nav-btn nav-register' onClick={() => setMode('register')}>Create Account</button>
       {mode && (
         <div className='overlay' onClick={close}>
           <form className='auth-box' onClick={(e) => e.stopPropagation()} onSubmit={submit}>
-            <h3>{mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}</h3>
+            <h3>{mode === 'login' ? 'Login' : 'Create Account'}</h3>
             <input
-              placeholder='Usuario'
+              placeholder='Username'
               value={form.username}
               autoFocus
               onChange={(e) => setForm({ ...form, username: e.target.value })}
             />
             <input
               type='password'
-              placeholder='Contraseña'
+              placeholder='Password'
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
             />
             {mode === 'register' && (
-              <p className='muted'>Las cartas que ya marcaste en este navegador pasarán a tu cuenta.</p>
+              <p className='muted'>The cards you have already marked in this browser will be transferred to your account.</p>
             )}
             {mode === 'login' && (
               <p className='muted'>
-                Verás la colección de tu cuenta. Lo que marcaste sin cuenta en este navegador no se mezcla.
+                Your account collection will be shown. Cards marked in this browser while logged out won't be merged with it.
               </p>
             )}
             {error && <p className='error'>{error}</p>}
-            <button type='submit' disabled={busy}>
-              {busy ? 'Enviando...' : mode === 'login' ? 'Entrar' : 'Crear cuenta'}
+            <button type='submit' className={mode === 'login' ? 'btn-login' : ''} disabled={busy}>
+              {busy ? 'Sending...' : mode === 'login' ? 'Login' : 'Create Account'}
             </button>
-            <button type='button' onClick={close}>Cancelar</button>
+            <button type='button' onClick={close}>Cancel</button>
           </form>
         </div>
       )}

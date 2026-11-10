@@ -11,8 +11,7 @@ from sqlalchemy.orm import Session, contains_eager, joinedload, selectinload
 
 from .accounts import router as accounts_router
 from .db import SessionLocal
-from .models import Card, CardSet, CollectionItem, WishlistItem
-
+from .models import Card, CardSet, CollectionItem, SetShowcase, WishlistItem
 load_dotenv()
 app = FastAPI(title='PKollector API')
 app.add_middleware(
@@ -74,7 +73,7 @@ def card_out(c: Card):
         'weaknesses': [{'type': w.type, 'value': w.value} for w in c.weaknesses],
         'resistances': [{'type': r.type, 'value': r.value} for r in c.resistances],
         'retreat_cost': c.retreat_cost, 'converted_retreat_cost': c.converted_retreat_cost,
-        'set_id': c.set_id, 'set_name': c.card_set.name,
+        'set_id': c.set_id, 'set_name': c.card_set.name, 'set_symbol': c.card_set.image_symbol,
         'number': c.number, 'artist': c.artist, 'rarity': c.rarity,
         'flavor_text': c.flavor_text,
         'national_pokedex_numbers': c.national_pokedex_numbers,
@@ -93,7 +92,7 @@ def card_summary(c: Card):
     return {
         'id': c.id, 'name': c.name, 'supertype': c.supertype, 'subtypes': c.subtypes,
         'types': c.types, 'hp': c.hp, 'rarity': c.rarity, 'number': c.number,
-        'set_id': c.set_id, 'set_name': c.card_set.name,
+        'set_id': c.set_id, 'set_name': c.card_set.name, 'set_symbol': c.card_set.image_symbol,
         'image_small': c.image_small, 'image_large': c.image_large,
     }
 
@@ -155,6 +154,7 @@ def filters(db: Session = Depends(get_db)):
 
 
 @app.get('/sets/{set_id}')
+
 def get_set(set_id: str, db: Session = Depends(get_db)):
     s = db.get(CardSet, set_id)
     if not s:
@@ -166,6 +166,42 @@ def get_set(set_id: str, db: Session = Depends(get_db)):
         'image_logo': s.image_logo, 'image_symbol': s.image_symbol,
     }
 
+_sets_cache = {'at': 0.0, 'data': None}
+
+
+@app.get('/sets')
+def list_sets(db: Session = Depends(get_db)):
+    now = time.time()
+    if _sets_cache['data'] and now - _sets_cache['at'] < FILTERS_TTL:
+        return _sets_cache['data']
+
+    sets = db.scalars(select(CardSet)).all()
+    counts = dict(db.execute(select(Card.set_id, func.count(Card.id)).group_by(Card.set_id)).all())
+    rows = db.execute(
+        select(SetShowcase.set_id, Card.id, Card.name, Card.number, Card.image_small)
+        .select_from(SetShowcase)
+        .join(Card, Card.id == SetShowcase.card_id)
+        .order_by(SetShowcase.set_id, SetShowcase.position)
+    ).all()
+    previews = {}
+    for r in rows:
+        previews.setdefault(r.set_id, []).append({
+            'id': r.id, 'name': r.name, 'number': r.number, 'image_small': r.image_small,
+        })
+
+    data = [
+        {
+            'id': s.id, 'name': s.name, 'series': s.series,
+            'printed_total': s.printed_total, 'total': s.total,
+            'count': counts.get(s.id, 0),
+            'release_date': iso(s.release_date),
+            'image_logo': s.image_logo, 'image_symbol': s.image_symbol,
+            'cards': previews.get(s.id, []),
+        }
+        for s in sets
+    ]
+    _sets_cache.update(at=now, data=data)
+    return data
 
 @app.get('/cards')
 def list_cards(

@@ -4,8 +4,7 @@ import CardModal from './CardModal';
 
 const STATUS = [['all', 'Todas'], ['owned', 'Las que tengo'], ['missing', 'Me faltan']];
 
-export default function SetView({ setId, onChangeSetId, owned, onChangeQty, wishlist = {}, onToggleWish }) 
-{  const [sets, setSets] = useState([]);
+export default function SetView({ setId, onBack, owned, onChangeQty, wishlist = {}, onToggleWish }) {
   const [info, setInfo] = useState(null);
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -14,11 +13,6 @@ export default function SetView({ setId, onChangeSetId, owned, onChangeQty, wish
   const [selected, setSelected] = useState(null);
 
   useEffect(() => {
-    api('/filters').then((f) => setSets(f.sets)).catch((e) => setError(e.message));
-  }, []);
-
-  useEffect(() => {
-    if (!setId) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -45,15 +39,8 @@ export default function SetView({ setId, onChangeSetId, owned, onChangeQty, wish
 
   return (
     <div>
-      <select
-        value={setId || ''}
-        onChange={(e) => { onChangeSetId(e.target.value); setStatus('all'); }}
-      >
-        <option value=''>Elige un set...</option>
-        {sets.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-      </select>
+      <button onClick={onBack}>← Todos los sets</button>
 
-      {!setId && <p className='muted'>Elige un set para ver su checklist.</p>}
       {error && <p className='error'>No se pudo cargar: {error}</p>}
       {loading && <p className='muted'>Cargando...</p>}
 
@@ -84,7 +71,7 @@ export default function SetView({ setId, onChangeSetId, owned, onChangeQty, wish
             {visible.map((c) => (
               <div key={c.id} className={'tile' + (owned[c.id] ? ' owned' : ' missing')}>
                 <img src={c.image_small} alt={c.name} loading='lazy' onClick={() => setSelected(c)} />
-                                {onToggleWish && (
+                {onToggleWish && (
                   <button
                     className={'star' + (wishlist[c.id] ? ' on' : '')}
                     title='Lista de deseos'
@@ -113,9 +100,9 @@ export default function SetView({ setId, onChangeSetId, owned, onChangeQty, wish
           card={selected}
           qty={owned[selected.id] || 0}
           onChangeQty={onChangeQty}
-          onClose={() => setSelected(null)}
           wanted={!!wishlist[selected.id]}
           onToggleWish={onToggleWish}
+          onClose={() => setSelected(null)}
         />
       )}
     </div>
