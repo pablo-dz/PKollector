@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import CardModal from './CardModal';
+import LoadingIndicator from './LoadingIndicator';
 
 const STATUS = [['all', 'All'], ['owned', 'Owned'], ['missing', 'Missing']];
 
 export default function SetView({ setId, onBack, owned, onChangeQty, wishlist = {}, onToggleWish }) {
   const [info, setInfo] = useState(null);
   const [cards, setCards] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [status, setStatus] = useState('all');
   const [selected, setSelected] = useState(null);
@@ -42,7 +43,7 @@ export default function SetView({ setId, onBack, owned, onChangeQty, wishlist = 
       <button onClick={onBack}>← All Sets</button>
 
       {error && <p className='error'>Could not load: {error}</p>}
-      {loading && <p className='muted'>Loading...</p>}
+      {loading && <LoadingIndicator>Loading cards...</LoadingIndicator>}
 
       {info && (
         <>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
+import LoadingIndicator from './LoadingIndicator';
 
 export default function Progress({ refreshKey, onOpenSet }) {
   const [data, setData] = useState(null);
@@ -11,7 +12,7 @@ export default function Progress({ refreshKey, onOpenSet }) {
   }, [refreshKey]);
 
   if (error) return <p className='error'>Could not load: {error}</p>;
-  if (!data) return <p>Loading...</p>;
+  if (!data) return <LoadingIndicator>Loading progress...</LoadingIndicator>;
 
   const pct = (o, t) => (t ? Math.round((o / t) * 100) : 0);
   const sets = data.sets.filter((s) => !onlyStarted || s.owned > 0);

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
+import LoadingIndicator from './LoadingIndicator';
 
 const PAGE = 20;
 const MIN_HALF = 5;
@@ -103,7 +104,7 @@ export default function SetsBrowser({ onOpenSet, refreshKey }) {
       </div>
 
       {error && <p className='error'>Could not load: {error}</p>}
-      {loading && <p className='muted'>Loading sets...</p>}
+      {loading && <LoadingIndicator>Loading sets...</LoadingIndicator>}
       {!loading && !error && <p className='count'>{list.length} sets</p>}
 
       {visible.map((s) => {
