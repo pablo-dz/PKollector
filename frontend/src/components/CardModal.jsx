@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { EnergyIcon, EnergyList } from './EnergyIcon';
+import LoadingIndicator from './LoadingIndicator';
 
 const EMPTY = { rules: [], abilities: [], attacks: [], weaknesses: [], resistances: [], retreat_cost: [] };
 
@@ -58,7 +59,7 @@ export default function CardModal({ card: summary, qty = 0, onChangeQty, wanted 
             )}
           </p>
 
-          {!full && !error && <p className='muted'>Loading details...</p>}
+          {!full && !error && <LoadingIndicator>Loading details...</LoadingIndicator>}
           {error && <p className='error'>Could not load details: {error}</p>}
 
           {card.evolves_from && <p>Evolves from: {card.evolves_from}</p>}

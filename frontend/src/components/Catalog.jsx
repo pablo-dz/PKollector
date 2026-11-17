@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import CardModal from './CardModal';
 import { EnergyIcon } from './EnergyIcon';
+import LoadingIndicator from './LoadingIndicator';
 
 const PAGE_SIZE = 40;
 const EMPTY = {
@@ -47,7 +48,7 @@ export default function Catalog({
   });
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ items: [], total: 0 });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selected, setSelected] = useState(null);
   const [open, setOpen] = useState(false);
@@ -224,8 +225,10 @@ export default function Catalog({
 
       {error ? (
         <p className='error'>Could not load: {error}</p>
+      ) : loading ? (
+        <LoadingIndicator>Loading cards...</LoadingIndicator>
       ) : (
-        <p className='count'>{loading ? 'Loading...' : data.total + ' cards'}</p>
+        <p className='count'>{data.total} cards</p>
       )}
 
       <div className='grid'>
